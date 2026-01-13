@@ -3,455 +3,500 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>靶場數據追蹤表 (Pro)</title>
+    <title>靶場數據追蹤 (iPhone Pro Max)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/....../6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #2563eb;
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-            --border-color: #e2e8f0;
-            --bg-color: #ffffff;
-            --header-height: 60px;
+            --primary-color: #007AFF; /* iOS Blue */
+            --danger-color: #FF3B30; /* iOS Red */
+            --success-color: #34C759; /* iOS Green */
+            --bg-color: #F2F2F7; /* iOS System Gray 6 */
+            --card-bg: #FFFFFF;
+            --border-color: #E5E5EA;
+            
+            /* iPhone Notch & Home Bar Safe Areas */
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            
+            --header-height: calc(60px + var(--safe-top));
         }
+
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc;
-            overscroll-behavior-y: none;
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: #000;
+            overscroll-behavior-y: none; /* 禁止下拉重整效果 */
             -webkit-tap-highlight-color: transparent;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden; /* 防止 Body 捲動，改用內部容器捲動 */
         }
-        /* --- 佈局系統 --- */
-        .layout-grid {
+
+        /* --- 佈局容器 --- */
+        .app-layout {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            height: 100dvh; /* Mobile dynamic viewport height */
+            height: 100%;
+            width: 100%;
         }
-        /* --- 頂部設定區 (可收合) --- */
-        .settings-panel {
-            background: white;
-            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-            border-bottom: 1px solid var(--border-color);
-            position: relative;
-            z-index: 35;
-        }
-        .settings-panel.open {
-            max-height: 400px;
-            opacity: 1;
-            padding-bottom: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        /* --- 狀態條 (HUD) --- */
-        .status-bar {
-            background: white;
-            z-index: 40;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+        /* --- 1. 頂部狀態列 (HUD) --- */
+        .status-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding-top: var(--safe-top);
+            padding-bottom: 0.75rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            z-index: 50;
+            flex-shrink: 0;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0.5rem 1rem;
-            height: var(--header-height);
+            align-items: flex-end; /* 對齊底部 */
+            box-shadow: 0 1px 10px rgba(0,0,0,0.02);
+        }
+
+        /* --- 2. 設定面板 (折疊式) --- */
+        .settings-panel {
+            background: var(--bg-color);
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 45;
             flex-shrink: 0;
         }
-        /* --- 表格容器 --- */
-        .table-wrapper {
+        .settings-panel.open {
+            max-height: 500px;
+        }
+
+        /* --- 3. 表格主體 (可捲動區) --- */
+        .table-scroll-area {
             flex: 1;
             overflow: auto;
-            position: relative;
-            background: white;
-            -webkit-overflow-scrolling: touch; 
+            -webkit-overflow-scrolling: touch;
+            background: var(--bg-color);
+            padding-bottom: 20px;
         }
+
         table {
             border-collapse: separate;
             border-spacing: 0;
             width: 100%;
+            background: var(--bg-color);
         }
-        th, td {
-            padding: 6px 4px;
-            text-align: center;
-            white-space: nowrap;
-            border-bottom: 1px solid var(--border-color);
-            position: relative;
-            vertical-align: middle;
-        }
-        /* 凍結首列 (Wave ID) */
-        .sticky-col {
-            position: sticky;
-            left: 0;
-            z-index: 20;
-            background-color: white;
-            border-right: 1px solid #e2e8f0;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.02);
-        }
-        thead th {
+
+        th {
+            background: var(--bg-color);
+            color: #8E8E93;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 8px 4px;
             position: sticky;
             top: 0;
-            background-color: #f8fafc;
             z-index: 10;
-            font-size: 0.75rem;
-            color: #64748b;
-            font-weight: 600;
-            padding-top: 10px;
-            padding-bottom: 10px;
+            border-bottom: 1px solid #C6C6C8;
         }
-        thead th.sticky-col {
-            z-index: 30;
-            background-color: #f8fafc;
+
+        /* 凍結左側波次欄 */
+        .sticky-col-head {
+            left: 0;
+            z-index: 20;
+            background: var(--bg-color);
+            border-right: 1px solid #D1D1D6;
         }
-        /* --- 輸入框視覺優化 (核心修改) --- */
+        .sticky-col-body {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-color); /* 保持背景色一致 */
+            border-right: 1px solid #D1D1D6;
+            border-bottom: 1px solid #E5E5EA;
+        }
+
+        td {
+            padding: 8px 6px; /* 增加間距適應大螢幕 */
+            background: #fff;
+            border-bottom: 1px solid #E5E5EA;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* --- 優化輸入框 (iPhone Pro Max 尺寸適配) --- */
         input[type="number"] {
             font-family: 'Roboto Mono', monospace;
             width: 100%;
-            min-width: 42px;
-            height: 38px; /* 增加觸控高度 */
+            min-width: 50px; /* 加寬 */
+            height: 44px;    /* iOS 建議最小觸控高度 */
+            font-size: 1.15rem; /* 字體加大 */
             text-align: center;
             padding: 0;
-            /* 預設樣式：淺灰底 + 虛線框 */
-            background-color: #f8fafc; 
-            border: 1.5px dashed #cbd5e1; 
-            border-radius: 6px;
-            font-size: 1.05rem;
-            color: #0f172a;
-            transition: all 0.15s ease-out;
+            background-color: #F9F9F9;
+            border: 1.5px dashed #C7C7CC; /* 虛線框提示 */
+            border-radius: 8px; /* 更圓潤 */
+            color: #000;
+            transition: all 0.2s;
             -moz-appearance: textfield;
+            touch-action: manipulation; /* 防止雙擊縮放 */
         }
-        /* 輸入框聚焦時：變白底 + 實線藍框 + 陰影 */
+
         input[type="number"]:focus {
             outline: none;
-            background-color: #ffffff;
+            background-color: #FFF;
             border-style: solid;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
             transform: scale(1.02);
-            z-index: 5;
+            z-index: 2;
         }
-        /* 設定區的輸入框樣式 (實線) */
+
+        /* 設定區輸入框 */
         .settings-input {
             border-style: solid !important;
-            background-color: #fff !important;
-            border-color: #cbd5e1 !important;
+            background: #fff !important;
+            border-color: #C7C7CC !important;
         }
-        .settings-input:focus {
-            border-color: var(--primary-color) !important;
-        }
-        input::placeholder {
-            color: #94a3b8;
-            font-size: 1rem;
-            opacity: 0.4;
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        /* --- 視覺狀態 --- */
-        .col-header-icon {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-        .col-header-icon i { font-size: 0.9rem; }
-        .col-header-icon span { font-size: 0.65rem; }
-        /* --- 底部按鈕區 --- */
-        .footer-actions {
-            background: white;
-            border-top: 1px solid var(--border-color);
-            padding: 0.75rem 1rem;
+
+        input::placeholder { color: #C7C7CC; font-weight: 300; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* --- 4. 底部按鈕區 --- */
+        .footer-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding: 1rem 1.25rem;
+            padding-bottom: max(1rem, var(--safe-bottom)); /* 適配 Home Bar */
             display: flex;
+            align-items: center;
             gap: 1rem;
-            align-items: center;
-            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
-            z-index: 40;
+            z-index: 50;
             flex-shrink: 0;
-            padding-bottom: env(safe-area-inset-bottom, 20px); /* iPhone X+ 適配 */
         }
-        .btn-main {
-            background: var(--primary-color);
+
+        /* iOS 風格按鈕 */
+        .btn-ios {
+            background-color: var(--primary-color);
             color: white;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            width: 100%;
+            border-radius: 12px;
             font-weight: 600;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
-            transition: transform 0.1s;
-        }
-        .btn-main:active { transform: scale(0.98); }
-        .stat-badge {
+            font-size: 1.05rem;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: transform 0.1s, opacity 0.1s;
+            width: 100%;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            font-size: 0.7rem;
-            color: #64748b;
-            min-width: 60px;
+            gap: 8px;
         }
-        .stat-badge b {
-            font-size: 1rem;
-            color: #334155;
-            font-family: 'Roboto Mono';
+        .btn-ios:active { transform: scale(0.97); opacity: 0.9; }
+
+        /* --- Modals (卡片式) --- */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
         }
-        /* Modal 動畫 */
-        #modalOverlay, #helpOverlay, #statsOverlay { transition: opacity 0.2s; }
-        #modalBox, #helpContent, #statsContent { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-card {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px;
+            padding-bottom: max(24px, var(--safe-bottom));
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 101;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+        }
+        .modal-open .modal-backdrop { opacity: 1; pointer-events: auto; }
+        .modal-open .modal-card { transform: translateY(0); }
+
         /* 說明書樣式 */
-        .manual-step {
+        .manual-item {
             display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px dashed #f1f5f9;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px dashed #E5E5EA;
         }
-        .manual-step:last-child { border-bottom: none; }
-        .step-num {
-            flex-shrink: 0;
-            width: 24px;
-            height: 24px;
+        .manual-num {
             background: var(--primary-color);
             color: white;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
             font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
             margin-top: 2px;
         }
-        .step-content h4 {
-            font-weight: bold;
-            color: #1e293b;
-            font-size: 0.95rem;
-            margin-bottom: 0.25rem;
-        }
-        .step-content p {
-            font-size: 0.85rem;
-            color: #64748b;
-            line-height: 1.5;
+        .manual-content h4 { font-weight: 700; color: #1C1C1E; margin-bottom: 4px; font-size: 1.05rem; }
+        .manual-content p { color: #3A3A3C; font-size: 0.95rem; line-height: 1.5; }
+
+        /* 標籤小工具 */
+        .tag-diff {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
     </style>
 </head>
-<body class="text-gray-800">
-    <div class="layout-grid">
-        <!-- 1. 狀態列 (HUD) -->
-        <div class="status-bar">
-            <div class="flex items-center gap-3">
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">剩餘彈藥</span>
-                    <span id="remainingShots" class="text-2xl font-bold text-emerald-600 leading-none tabular-nums">0</span>
+<body>
+
+    <div class="app-layout">
+        
+        <!-- 1. 頂部狀態列 -->
+        <header class="status-header">
+            <!-- 左側：剩餘彈藥 -->
+            <div class="flex items-center gap-4">
+                <div>
+                    <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">剩餘彈藥</div>
+                    <div id="remainingShots" class="text-3xl font-bold text-emerald-600 leading-none tabular-nums font-mono">0</div>
                 </div>
-                <div class="h-8 w-px bg-gray-200"></div>
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">剩餘波次</span>
+                <div class="h-8 w-px bg-gray-300 mx-1"></div>
+                <div>
+                    <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">剩餘波次</div>
                     <div class="flex items-baseline">
-                        <span id="remainingWaves" class="text-xl font-bold text-indigo-600 leading-none tabular-nums">0</span>
-                        <span id="partialWave" class="text-[10px] text-indigo-400 ml-1 hidden"></span>
+                        <span id="remainingWaves" class="text-2xl font-bold text-indigo-600 leading-none tabular-nums font-mono">0</span>
+                        <span id="partialWave" class="text-xs text-indigo-400 font-bold ml-1 hidden"></span>
                     </div>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="app.toggleHelp()" class="p-2 text-gray-400 hover:text-blue-600 transition rounded-full hover:bg-gray-100" title="使用說明">
-                    <i class="fas fa-question-circle text-lg"></i>
+
+            <!-- 右側：功能按鈕 -->
+            <div class="flex gap-1">
+                <button onclick="app.toggleHelp()" class="w-10 h-10 rounded-full bg-gray-100 text-blue-600 flex items-center justify-center active:bg-gray-200 transition">
+                    <i class="fas fa-book-open text-lg"></i>
                 </button>
-                <button onclick="app.toggleStats()" class="p-2 text-gray-500 hover:text-blue-600 transition rounded-full hover:bg-gray-100" title="詳細統計">
+                <button onclick="app.toggleStats()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:bg-gray-200 transition">
                     <i class="fas fa-chart-pie text-lg"></i>
                 </button>
-                <button onclick="app.toggleSettings()" id="settingsBtn" class="p-2 text-gray-500 hover:text-blue-600 transition rounded-full hover:bg-gray-100 relative" title="設定">
-                    <i class="fas fa-sliders-h text-lg"></i>
-                    <!-- 設定提示點 (若未設定總數) -->
-                    <span id="settingsDot" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                <button onclick="app.toggleSettings()" id="settingsBtn" class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:bg-gray-200 transition relative">
+                    <i class="fas fa-cog text-lg"></i>
+                    <span id="settingsDot" class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white hidden"></span>
                 </button>
             </div>
-        </div>
-        <!-- 2. 設定面板 (可收合) -->
+        </header>
+
+        <!-- 2. 設定面板 -->
         <div id="settingsPanel" class="settings-panel">
-            <div class="p-4 bg-slate-50">
-                <h3 class="text-xs font-bold text-gray-400 uppercase mb-3 flex justify-between items-center">
-                    基礎設定
-                    <button onclick="app.resetData()" class="text-[10px] text-red-500 hover:text-red-700 bg-red-50 px-2 py-1 rounded">重置所有資料</button>
-                </h3>
-                <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-gray-500 uppercase">基礎設定</h3>
+                    <button onclick="app.resetData()" class="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg font-medium">重置資料</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-5 mb-5">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">總領取發數 <span class="text-red-500">*</span></label>
-                        <input type="number" id="globalReceivedShots" oninput="app.updateGlobal(this.value)" class="w-full settings-input rounded font-bold text-lg" placeholder="0">
+                        <label class="block text-xs text-gray-500 mb-2 font-medium">總領取發數 <span class="text-red-500">*</span></label>
+                        <input type="number" id="globalReceivedShots" oninput="app.updateGlobal(this.value)" class="settings-input text-xl font-bold text-blue-600" placeholder="0">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-500 mb-1">靶位數量</label>
-                        <div class="flex bg-white rounded border border-gray-300 overflow-hidden h-[38px]">
-                            <button onclick="app.adjustTargets(-1)" class="px-3 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 border-r border-gray-300">-</button>
-                            <input type="number" id="numberOfTargets" readonly class="w-full text-center font-bold !bg-white !border-none" value="2">
-                            <button onclick="app.adjustTargets(1)" class="px-3 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 border-l border-gray-300">+</button>
+                        <label class="block text-xs text-gray-500 mb-2 font-medium">靶位數量</label>
+                        <div class="flex items-center bg-white rounded-lg border border-gray-300 h-[44px]">
+                            <button onclick="app.adjustTargets(-1)" class="w-12 h-full text-gray-500 active:bg-gray-100 border-r text-xl font-bold">-</button>
+                            <input type="number" id="numberOfTargets" readonly class="w-full text-center font-bold !bg-transparent !border-none !shadow-none text-lg" value="2">
+                            <button onclick="app.adjustTargets(1)" class="w-12 h-full text-gray-500 active:bg-gray-100 border-l text-xl font-bold">+</button>
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-col mb-2">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">每靶預設發數 (自動帶入)</h3>
-                    <div id="expected-shots-container" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        <!-- JS 生成預設發數輸入框 -->
+
+                <div class="mb-4">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">每靶預設發數 (自動填入)</h3>
+                    <div id="expected-shots-container" class="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
+                        <!-- JS 生成 -->
                     </div>
                 </div>
-                <div class="mt-2 text-center border-t border-gray-100 pt-2">
-                    <button onclick="app.toggleSettings()" class="text-sm text-gray-500 hover:text-gray-800 w-full py-2">
-                        <i class="fas fa-chevron-up"></i> 收起設定
-                    </button>
-                </div>
+
+                <button onclick="app.toggleSettings()" class="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm">
+                    <i class="fas fa-chevron-up mr-1"></i> 收起設定
+                </button>
             </div>
         </div>
-        <!-- 3. 表格主體 (Scrollable) -->
-        <div class="table-wrapper" id="tableWrapper">
+
+        <!-- 3. 表格區 -->
+        <div class="table-scroll-area" id="tableWrapper">
             <table>
                 <thead id="table-head">
-                    <!-- JS Rendering -->
+                    <!-- JS 生成 -->
                 </thead>
                 <tbody id="table-body">
-                    <!-- JS Rendering -->
+                    <!-- JS 生成 -->
                 </tbody>
             </table>
         </div>
-        <!-- 4. 底部操作區 -->
-        <div class="footer-actions">
+
+        <!-- 4. 底部按鈕 -->
+        <footer class="footer-bar">
             <!-- 簡易統計 -->
-            <div class="flex gap-3 mr-auto">
-                <div class="stat-badge">
-                    <b id="totalConsumed" class="text-gray-700">0</b>
-                    <span>已消耗</span>
+            <div class="flex gap-4 mr-auto">
+                <div class="flex flex-col items-center">
+                    <span id="totalConsumed" class="text-xl font-bold text-gray-800 font-mono">0</span>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">已消耗</span>
                 </div>
-                <div class="stat-badge">
-                    <b id="totalUnfired" class="text-red-600">0</b>
-                    <span>未擊發</span>
+                <div class="w-px h-8 bg-gray-200"></div>
+                <div class="flex flex-col items-center">
+                    <span id="totalUnfired" class="text-xl font-bold text-red-500 font-mono">0</span>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">未擊發</span>
                 </div>
             </div>
-            <!-- 新增按鈕 -->
-            <button onclick="app.addWave()" class="btn-main flex items-center justify-center gap-2 max-w-[200px]">
-                <i class="fas fa-plus"></i> 新增波次
+
+            <!-- 主按鈕 -->
+            <button onclick="app.addWave()" class="btn-ios flex-1 max-w-[220px]">
+                <i class="fas fa-plus-circle"></i> 新增波次
             </button>
-        </div>
+        </footer>
+
     </div>
+
     <!-- 說明書 Modal -->
-    <div id="helpModal" class="fixed inset-0 z-[100] hidden">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="helpOverlay" onclick="app.toggleHelp()"></div>
-        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 h-[85vh] overflow-y-auto transform translate-y-full transition-transform duration-300 ease-out shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" id="helpContent">
-            <div class="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b z-10">
-                <h3 class="text-lg font-bold text-gray-800 flex items-center"><i class="fas fa-book-open text-blue-600 mr-2"></i>使用說明書</h3>
-                <button onclick="app.toggleHelp()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><i class="fas fa-times"></i></button>
+    <div id="helpModal" class="fixed inset-0 z-[100] pointer-events-none">
+        <div class="modal-backdrop" onclick="app.toggleHelp()"></div>
+        <div class="modal-card">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-book-open text-blue-500 mr-2"></i> 使用說明書
+                </h3>
+                <button onclick="app.toggleHelp()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-500"><i class="fas fa-times"></i></button>
             </div>
-            <div class="manual-step">
-                <div class="step-num">1</div>
-                <div class="step-content">
-                    <h4>快速設定</h4>
-                    <p>首次使用請先點擊右上角 <i class="fas fa-sliders-h text-xs bg-gray-200 p-1 rounded"></i> 設定「總領取發數」與「靶位數」。<br>建議設定「每靶預設發數」，新增波次時會自動填入，省去重複輸入。</p>
+
+            <div class="manual-item">
+                <div class="manual-num">1</div>
+                <div class="manual-content">
+                    <h4>初始設定</h4>
+                    <p>請先點擊頂部齒輪 <i class="fas fa-cog text-gray-400"></i> 設定「總領取發數」。若有固定裝填數（如每彈匣5發），請設定「預設發數」，新增波次時會自動填入。</p>
                 </div>
             </div>
-            <div class="manual-step">
-                <div class="step-num">2</div>
-                <div class="step-content">
+
+            <div class="manual-item">
+                <div class="manual-num">2</div>
+                <div class="manual-content">
                     <h4>輸入數據</h4>
-                    <p>凡是帶有 <span class="inline-block w-4 h-4 border-2 border-dashed border-gray-400 bg-gray-100 rounded mx-1 align-middle"></span> 虛線框的欄位皆可點擊輸入：</p>
-                    <ul class="list-none text-xs text-gray-600 space-y-2 mt-2">
-                        <li><span class="inline-block w-4 text-center text-blue-600 font-bold">送</span>：發給射手的子彈數。</li>
-                        <li><span class="inline-block w-4 text-center text-green-600 font-bold">收</span>：回收的彈殼數。</li>
-                        <li><span class="inline-block w-4 text-center text-gray-500 font-bold">未</span>：(未擊發) 槍枝故障或停止射擊後繳回的實彈。</li>
-                        <li><span class="inline-block w-4 text-center text-red-500 font-bold">壞</span>：(不發彈) 擊針撞擊底火但未擊發。</li>
-                        <li><span class="inline-block w-4 text-center text-orange-500 font-bold">變</span>：(變形彈) 彈體損壞無法使用。</li>
+                    <p>點擊表格中的 <span class="inline-block border-2 border-dashed border-gray-400 w-5 h-5 align-middle rounded mx-1 bg-gray-50"></span> 虛線框即可輸入。介面已針對 iPhone Pro Max 優化，框體較大易於點擊。</p>
+                </div>
+            </div>
+
+            <div class="manual-item">
+                <div class="manual-num">3</div>
+                <div class="manual-content">
+                    <h4>欄位定義</h4>
+                    <ul class="text-sm text-gray-600 space-y-1 mt-1 ml-1">
+                        <li><b class="text-blue-600">送</b>：發給射手的實彈數。</li>
+                        <li><b class="text-green-600">收</b>：回收的彈殼數。</li>
+                        <li><b>未 (未擊發)</b>：槍枝故障或停射繳回的實彈。</li>
+                        <li><b class="text-red-500">壞 (不發彈)</b>：擊針撞擊底火但未擊發。</li>
+                        <li><b class="text-orange-500">變 (變形彈)</b>：彈體損壞無法使用。</li>
                     </ul>
                 </div>
             </div>
-            <div class="manual-step">
-                <div class="step-num">3</div>
-                <div class="step-content">
-                    <h4>防呆判讀 (自動計算)</h4>
-                    <p>系統會自動計算每格的平衡：<code>送 - (收 + 未)</code></p>
-                    <div class="flex gap-4 mt-2">
-                        <div class="bg-red-50 p-2 rounded border border-red-100 flex-1 text-center">
-                            <span class="text-red-500 font-bold text-xs block mb-1">紅標 (缺2)</span>
-                            <div class="text-[10px] text-gray-500">短少 2 顆<br>需立即尋找</div>
+
+            <div class="manual-item">
+                <div class="manual-num">4</div>
+                <div class="manual-content">
+                    <h4>防呆判讀 (系統自動計算)</h4>
+                    <p class="mb-2">每格右上角若出現標籤，代表數據有誤：</p>
+                    <div class="flex gap-3">
+                        <div class="bg-red-50 p-2 rounded border border-red-100 text-center flex-1">
+                            <span class="text-white bg-red-500 text-xs px-2 py-0.5 rounded font-bold">缺 -2</span>
+                            <div class="text-xs text-gray-500 mt-1">短少 2 顆</div>
                         </div>
-                        <div class="bg-blue-50 p-2 rounded border border-blue-100 flex-1 text-center">
-                            <span class="text-blue-500 font-bold text-xs block mb-1">藍標 (多1)</span>
-                            <div class="text-[10px] text-gray-500">多出 1 顆<br>可能混入舊彈</div>
+                        <div class="bg-blue-50 p-2 rounded border border-blue-100 text-center flex-1">
+                            <span class="text-white bg-blue-500 text-xs px-2 py-0.5 rounded font-bold">多 +1</span>
+                            <div class="text-xs text-gray-500 mt-1">多出 1 顆</div>
                         </div>
                     </div>
                 </div>
             </div>
-             <div class="manual-step">
-                <div class="step-num">4</div>
-                <div class="step-content">
-                    <h4>消耗計算邏輯</h4>
-                    <p><b>實際消耗 = 總送出 - 未擊發</b></p>
-                    <p class="mt-1 text-xs text-gray-500">註：未擊發的實彈需繳回庫房，故不列入消耗。不發彈與變形彈視為已消耗（需繳回彈體）。</p>
-                </div>
-            </div>
-             <div class="manual-step">
-                <div class="step-num">5</div>
-                <div class="step-content">
-                    <h4>保存與匯出</h4>
-                    <p>數據會自動保存在您的手機瀏覽器中，關閉分頁或重開機皆不會遺失。點擊 <i class="fas fa-chart-pie text-xs bg-gray-200 p-1 rounded"></i> 可匯出 JSON 檔案進行備份。</p>
-                </div>
-            </div>
-            <div class="mt-8 text-center pb-12">
-                <button onclick="app.toggleHelp()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform">我瞭解了</button>
-            </div>
+
+            <button onclick="app.toggleHelp()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-lg mt-2">瞭解</button>
         </div>
     </div>
+
     <!-- 統計詳細 Modal -->
-    <div id="statsModal" class="fixed inset-0 z-[100] hidden">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="statsOverlay" onclick="app.toggleStats()"></div>
-        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 transform translate-y-full transition-transform duration-300 ease-out shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" id="statsContent">
+    <div id="statsModal" class="fixed inset-0 z-[100] pointer-events-none">
+        <div class="modal-backdrop" onclick="app.toggleStats()"></div>
+        <div class="modal-card">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-gray-800">詳細統計數據</h3>
-                <button onclick="app.toggleStats()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><i class="fas fa-times"></i></button>
+                <h3 class="text-xl font-bold text-gray-900">詳細統計</h3>
+                <button onclick="app.toggleStats()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-500"><i class="fas fa-times"></i></button>
             </div>
-            <div class="grid grid-cols-3 gap-4 text-center mb-6">
-                <div class="p-3 bg-red-50 rounded-xl border border-red-100">
-                    <div class="text-2xl font-bold text-red-600" id="modalUnfired">0</div>
-                    <div class="text-xs text-red-400 mt-1">未擊發總數</div>
+            
+            <div class="grid grid-cols-3 gap-3 text-center mb-6">
+                <div class="bg-red-50 p-3 rounded-2xl">
+                    <div id="modalUnfired" class="text-2xl font-bold text-red-600 font-mono">0</div>
+                    <div class="text-xs text-red-400 mt-1">未擊發</div>
                 </div>
-                <div class="p-3 bg-orange-50 rounded-xl border border-orange-100">
-                    <div class="text-2xl font-bold text-orange-600" id="modalMisfires">0</div>
+                <div class="bg-orange-50 p-3 rounded-2xl">
+                    <div id="modalMisfires" class="text-2xl font-bold text-orange-600 font-mono">0</div>
                     <div class="text-xs text-orange-400 mt-1">不發彈</div>
                 </div>
-                <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                    <div class="text-2xl font-bold text-yellow-600" id="modalDeformed">0</div>
+                <div class="bg-yellow-50 p-3 rounded-2xl">
+                    <div id="modalDeformed" class="text-2xl font-bold text-yellow-600 font-mono">0</div>
                     <div class="text-xs text-yellow-500 mt-1">變形彈</div>
                 </div>
             </div>
-            <div class="space-y-3 text-sm text-gray-600">
-                <div class="flex justify-between border-b border-gray-100 pb-2">
-                    <span>總送出彈藥</span>
-                    <span class="font-mono font-bold" id="modalTotalSent">0</span>
+
+            <div class="bg-gray-50 rounded-xl p-4 space-y-3 mb-6">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">總送出</span>
+                    <span id="modalTotalSent" class="font-bold font-mono text-gray-800">0</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-100 pb-2">
-                    <span>總回收彈殼</span>
-                    <span class="font-mono font-bold" id="modalTotalRecv">0</span>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">總回收 (彈殼)</span>
+                    <span id="modalTotalRecv" class="font-bold font-mono text-green-600">0</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-100 pb-2 bg-blue-50 p-2 rounded">
-                    <span class="text-blue-800 font-bold">實際彈藥消耗</span>
-                    <span class="font-mono font-bold text-blue-600" id="modalConsumed">0</span>
+                <div class="border-t border-gray-200 my-2"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-800 font-bold">實際消耗</span>
+                    <span id="modalConsumed" class="font-bold font-mono text-2xl text-blue-600">0</span>
                 </div>
             </div>
-            <button onclick="app.exportData()" class="mt-6 w-full py-3 bg-gray-800 text-white rounded-xl font-medium shadow-md active:scale-95 transition-transform">
-                <i class="fas fa-file-export mr-2"></i> 匯出 JSON 紀錄
+
+            <button onclick="app.exportData()" class="w-full py-3 bg-gray-800 text-white rounded-xl font-bold">
+                <i class="fas fa-file-export mr-2"></i> 匯出 JSON
             </button>
-            <div class="h-6"></div> <!-- Safe area spacing -->
         </div>
     </div>
-    <!-- 確認視窗 Modal -->
-    <div id="modalOverlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[110] opacity-0">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-[85%] max-w-sm transform scale-95 transition-all" id="modalBox">
-            <h3 class="text-lg font-bold text-gray-800 mb-2" id="modalTitle">確認操作</h3>
-            <p class="text-gray-600 mb-6 text-sm leading-relaxed" id="modalMsg">...</p>
+
+    <!-- 確認視窗 (Alert) -->
+    <div id="alertModal" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+        <div class="bg-white rounded-2xl p-6 w-[80%] max-w-[320px] shadow-2xl transform scale-95 transition-transform duration-200 z-10">
+            <h3 id="alertTitle" class="text-lg font-bold text-gray-900 mb-2">確認</h3>
+            <p id="alertMsg" class="text-gray-600 mb-6 text-sm">...</p>
             <div class="flex gap-3">
-                <button onclick="app.closeModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200">取消</button>
-                <button id="modalConfirmBtn" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium shadow-md text-sm hover:bg-red-700">確定</button>
+                <button onclick="app.closeAlert()" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-bold">取消</button>
+                <button id="alertConfirm" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-bold">確定</button>
             </div>
         </div>
     </div>
+
     <script>
         const app = (() => {
             let state = {
@@ -460,10 +505,13 @@
                 expectedShots: [0, 0],
                 waves: []
             };
+
             const CONSTANTS = {
                 MAX_TARGETS: 50,
-                STORAGE_KEY: 'shooting_tracker_pro_v1'
+                STORAGE_KEY: 'shooting_tracker_promax_v1'
             };
+
+            // DOM Elements Cache
             const els = {
                 globalInput: document.getElementById('globalReceivedShots'),
                 targetInput: document.getElementById('numberOfTargets'),
@@ -478,27 +526,23 @@
                 totalConsumed: document.getElementById('totalConsumed'),
                 totalUnfired: document.getElementById('totalUnfired'),
                 // Modals
-                statsModal: document.getElementById('statsModal'),
-                statsOverlay: document.getElementById('statsOverlay'),
-                statsContent: document.getElementById('statsContent'),
                 helpModal: document.getElementById('helpModal'),
-                helpOverlay: document.getElementById('helpOverlay'),
-                helpContent: document.getElementById('helpContent'),
-                // Stat Values
+                statsModal: document.getElementById('statsModal'),
+                alertModal: document.getElementById('alertModal'),
+                // Modal Values
                 modalUnfired: document.getElementById('modalUnfired'),
                 modalMisfires: document.getElementById('modalMisfires'),
                 modalDeformed: document.getElementById('modalDeformed'),
                 modalTotalSent: document.getElementById('modalTotalSent'),
                 modalTotalRecv: document.getElementById('modalTotalRecv'),
                 modalConsumed: document.getElementById('modalConsumed'),
-                // Confirm
-                modalOverlay: document.getElementById('modalOverlay'),
-                modalBox: document.getElementById('modalBox'),
-                modalTitle: document.getElementById('modalTitle'),
-                modalMsg: document.getElementById('modalMsg'),
-                modalConfirmBtn: document.getElementById('modalConfirmBtn')
+                // Alert
+                alertTitle: document.getElementById('alertTitle'),
+                alertMsg: document.getElementById('alertMsg'),
+                alertConfirm: document.getElementById('alertConfirm')
             };
-            // --- Initialization ---
+
+            // --- Init ---
             const init = () => {
                 loadState();
                 if (state.globalReceived === 0) {
@@ -507,6 +551,7 @@
                 }
                 renderUI();
             };
+
             const loadState = () => {
                 const saved = localStorage.getItem(CONSTANTS.STORAGE_KEY);
                 if (saved) {
@@ -521,14 +566,17 @@
                     state.expectedShots = Array(state.targetCount).fill(5);
                 }
             };
+
             const saveState = () => {
                 localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(state));
                 calculateStats();
                 if (state.globalReceived > 0) els.settingsDot.classList.add('hidden');
             };
-            // --- Logic & Calc ---
+
+            // --- Logic ---
             const calculateStats = () => {
                 let totalSent = 0, totalReceived = 0, totalUnfired = 0, totalMisfires = 0, totalDeformed = 0;
+
                 state.waves.forEach(wave => {
                     wave.targets.forEach(t => {
                         totalSent += (parseInt(t.sent) || 0);
@@ -538,12 +586,14 @@
                         totalDeformed += (parseInt(t.deformed) || 0);
                     });
                 });
+
                 const actualConsumed = totalSent - totalUnfired;
                 const remaining = state.globalReceived - actualConsumed;
-                // Update Header
+
+                // Update HUD
                 els.remainingDiv.textContent = remaining;
-                els.remainingDiv.className = `text-2xl font-bold leading-none tabular-nums ${remaining < 0 ? 'text-red-500' : 'text-emerald-600'}`;
-                // Waves Calc
+                els.remainingDiv.className = `text-3xl font-bold tabular-nums font-mono ${remaining < 0 ? 'text-red-500' : 'text-emerald-600'}`;
+
                 const shotsPerWave = state.expectedShots.reduce((a, b) => a + (parseInt(b)||0), 0);
                 if (shotsPerWave > 0 && remaining > 0) {
                     const fullWaves = Math.floor(remaining / shotsPerWave);
@@ -559,18 +609,22 @@
                     els.remainingWavesDiv.textContent = remaining > 0 ? "∞" : "0";
                     els.partialWaveSpan.classList.add('hidden');
                 }
+
                 // Update Footer & Modal
                 els.totalConsumed.textContent = actualConsumed;
                 els.totalUnfired.textContent = totalUnfired;
+                
                 els.modalUnfired.textContent = totalUnfired;
                 els.modalMisfires.textContent = totalMisfires;
                 els.modalDeformed.textContent = totalDeformed;
                 els.modalTotalSent.textContent = totalSent;
                 els.modalTotalRecv.textContent = totalReceived;
                 els.modalConsumed.textContent = actualConsumed;
+
                 updateRowCalculations();
             };
-            // --- Rendering ---
+
+            // --- Render ---
             const renderUI = () => {
                 els.globalInput.value = state.globalReceived || '';
                 els.targetInput.value = state.targetCount;
@@ -578,71 +632,69 @@
                 renderTable();
                 calculateStats();
             };
+
             const renderExpectedInputs = () => {
                 els.expectedContainer.innerHTML = state.expectedShots.map((val, i) => `
-                    <div class="flex-shrink-0 w-12 text-center">
-                        <label class="text-[10px] text-gray-400 block mb-1">#${i+1}</label>
+                    <div class="flex-shrink-0 w-14 text-center">
+                        <label class="text-[10px] text-gray-400 block mb-1">靶${i+1}</label>
                         <input type="number" value="${val}" 
                             onchange="app.updateExpected(${i}, this.value)"
-                            class="w-full text-center settings-input border border-gray-300 rounded text-sm py-1 bg-white" placeholder="-">
+                            class="settings-input rounded-lg h-10 w-full" placeholder="-">
                     </div>
                 `).join('');
             };
+
             const renderTable = () => {
-                // Header
-                let headerRow = `<th class="sticky-col z-30 w-10 text-center shadow-sm text-gray-400">#</th>`;
+                // Header (Sticky)
+                let headerRow = `<th class="sticky-col-head w-12 text-center shadow-sm">#</th>`;
                 for (let i = 0; i < state.targetCount; i++) {
                     headerRow += `
-                        <th class="min-w-[50px] border-l border-gray-100">
-                            <div class="col-header-icon text-blue-600"><i class="fas fa-paper-plane"></i><span>送</span></div>
-                        </th>
-                        <th class="min-w-[50px]">
-                            <div class="col-header-icon text-green-600"><i class="fas fa-hand-holding"></i><span>收</span></div>
-                        </th>
-                        <th class="min-w-[40px] bg-slate-50">
-                            <div class="col-header-icon text-gray-400"><i class="fas fa-ban"></i><span>未</span></div>
-                        </th>
-                        <th class="min-w-[40px] bg-slate-50">
-                            <div class="col-header-icon text-red-400"><i class="fas fa-bolt"></i><span>壞</span></div>
-                        </th>
-                        <th class="min-w-[40px] bg-slate-50 border-r border-gray-200">
-                            <div class="col-header-icon text-orange-400"><i class="fas fa-shapes"></i><span>變</span></div>
-                        </th>
+                        <th class="min-w-[60px] border-l border-gray-100"><div class="text-blue-600">送</div></th>
+                        <th class="min-w-[60px]"><div class="text-green-600">收</div></th>
+                        <th class="min-w-[50px] bg-gray-50 text-gray-400">未</th>
+                        <th class="min-w-[50px] bg-gray-50 text-red-400">壞</th>
+                        <th class="min-w-[50px] bg-gray-50 border-r border-gray-200 text-orange-400">變</th>
                     `;
                 }
                 els.tableHead.innerHTML = `<tr>${headerRow}</tr>`;
+
                 // Body
                 if (state.waves.length === 0) {
-                    els.tableBody.innerHTML = `<tr><td colspan="${1 + state.targetCount * 5}" class="py-12 text-center text-gray-400 text-sm">點擊右下角「新增波次」開始</td></tr>`;
+                    els.tableBody.innerHTML = `<tr><td colspan="${1 + state.targetCount * 5}" class="py-16 text-center text-gray-400">
+                        <i class="fas fa-clipboard-list text-4xl mb-2 opacity-20"></i><br>尚無數據
+                    </td></tr>`;
                     return;
                 }
+
                 els.tableBody.innerHTML = state.waves.map((wave, wIdx) => {
                     let rowHtml = `
-                        <th class="sticky-col bg-white text-gray-500 font-medium text-xs shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                            <div class="flex flex-col items-center justify-center h-full gap-2">
-                                <span class="text-sm font-bold text-gray-700">${wave.id}</span>
-                                <button onclick="app.deleteWave(${wIdx})" class="text-gray-300 hover:text-red-500 p-2"><i class="fas fa-times"></i></button>
+                        <th class="sticky-col-body text-gray-500 font-medium">
+                            <div class="flex flex-col items-center justify-center gap-1">
+                                <span class="text-lg text-gray-800">${wave.id}</span>
+                                <button onclick="app.deleteWave(${wIdx})" class="text-gray-300 hover:text-red-500 p-2"><i class="fas fa-trash-alt text-xs"></i></button>
                             </div>
                         </th>
                     `;
+
                     wave.targets.forEach((t, tIdx) => {
-                        // 差異計算 (生成時不計算，由 updateRowCalculations 統一處理)
                         rowHtml += `
-                            <td class="border-l border-gray-100 relative group">
+                            <td class="border-l border-gray-100 relative">
                                 <input type="number" value="${t.sent}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'sent', this.value)" placeholder="-">
                             </td>
                             <td class="relative">
-                                <input type="number" value="${t.recv}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'recv', this.value)" placeholder="-" class="text-green-700 font-medium">
-                                <span id="diff-tag-${wIdx}-${tIdx}" class="absolute top-0 right-0 pointer-events-none"></span>
+                                <input type="number" value="${t.recv}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'recv', this.value)" placeholder="-" style="color:#059669; font-weight:600;">
+                                <div id="diff-tag-${wIdx}-${tIdx}" class="absolute -top-1 right-0 pointer-events-none z-10"></div>
                             </td>
-                            <td class="bg-slate-50"><input type="number" value="${t.unfired}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'unfired', this.value)" placeholder="" tabindex="-1" class="text-gray-500 text-xs"></td>
-                            <td class="bg-slate-50"><input type="number" value="${t.misfires}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'misfires', this.value)" placeholder="" tabindex="-1" class="text-red-400 text-xs"></td>
-                            <td class="bg-slate-50 border-r border-gray-200"><input type="number" value="${t.deformed}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'deformed', this.value)" placeholder="" tabindex="-1" class="text-orange-400 text-xs"></td>
+                            <td class="bg-gray-50"><input type="number" value="${t.unfired}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'unfired', this.value)" placeholder="" tabindex="-1" class="text-gray-400 text-sm"></td>
+                            <td class="bg-gray-50"><input type="number" value="${t.misfires}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'misfires', this.value)" placeholder="" tabindex="-1" class="text-red-400 text-sm"></td>
+                            <td class="bg-gray-50 border-r border-gray-200"><input type="number" value="${t.deformed}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'deformed', this.value)" placeholder="" tabindex="-1" class="text-orange-400 text-sm"></td>
                         `;
                     });
+
                     return `<tr>${rowHtml}</tr>`;
                 }).join('');
             };
+
             const updateRowCalculations = () => {
                 state.waves.forEach((wave, wIdx) => {
                     wave.targets.forEach((t, tIdx) => {
@@ -652,163 +704,132 @@
                             const recv = parseInt(t.recv) || 0;
                             const unfired = parseInt(t.unfired) || 0;
                             const diff = sent - recv - unfired;
+                            
                             if (diff === 0) {
                                 tag.innerHTML = '';
                             } else {
-                                const isLack = diff > 0; // 缺
-                                tag.innerHTML = `<div class="text-[10px] px-1 py-0.5 ${isLack ? 'text-white bg-red-500' : 'text-white bg-blue-500'} rounded-bl opacity-90 shadow-sm">${isLack ? '-'+diff : '+'+Math.abs(diff)}</div>`;
+                                const isLack = diff > 0;
+                                tag.innerHTML = `<span class="tag-diff ${isLack ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}">${isLack ? '-'+diff : '+'+Math.abs(diff)}</span>`;
                             }
                         }
                     });
                 });
             };
-            // --- Interactions ---
-            const toggleSettings = (forceOpen = false) => {
-                const isOpen = els.settingsPanel.classList.contains('open');
-                if (forceOpen || !isOpen) {
-                    els.settingsPanel.classList.add('open');
+
+            // --- Interaction ---
+            const toggleSettings = (force) => {
+                const p = els.settingsPanel;
+                const open = p.classList.contains('open');
+                if (force || !open) {
+                    p.classList.add('open');
                     document.getElementById('settingsBtn').classList.add('text-blue-600', 'bg-blue-50');
                 } else {
-                    els.settingsPanel.classList.remove('open');
+                    p.classList.remove('open');
                     document.getElementById('settingsBtn').classList.remove('text-blue-600', 'bg-blue-50');
                 }
             };
-            // Generic Toggle for Modals
-            const toggleModal = (modalId, overlayId, contentId) => {
-                const modal = document.getElementById(modalId);
-                const overlay = document.getElementById(overlayId);
-                const content = document.getElementById(contentId);
-                const isHidden = modal.classList.contains('hidden');
-                if (isHidden) {
-                    modal.classList.remove('hidden');
-                    requestAnimationFrame(() => {
-                        overlay.classList.remove('opacity-0');
-                        content.classList.remove('translate-y-full');
-                    });
+
+            const toggleModal = (modalEl) => {
+                const isOpen = modalEl.classList.contains('modal-open');
+                if (isOpen) {
+                    modalEl.classList.remove('modal-open');
+                    modalEl.classList.add('pointer-events-none');
                 } else {
-                    overlay.classList.add('opacity-0');
-                    content.classList.add('translate-y-full');
-                    setTimeout(() => modal.classList.add('hidden'), 300);
+                    modalEl.classList.remove('pointer-events-none');
+                    modalEl.classList.add('modal-open');
                 }
             };
-            const toggleStats = () => toggleModal('statsModal', 'statsOverlay', 'statsContent');
-            const toggleHelp = () => toggleModal('helpModal', 'helpOverlay', 'helpContent');
-            const updateGlobal = (val) => {
-                state.globalReceived = parseInt(val) || 0;
-                saveState();
-            };
-            const adjustTargets = (delta) => {
-                let newVal = state.targetCount + delta;
-                if (newVal < 1) newVal = 1;
-                if (newVal > CONSTANTS.MAX_TARGETS) newVal = CONSTANTS.MAX_TARGETS;
-                state.targetCount = newVal;
-                if (state.expectedShots.length < newVal) {
-                    for(let i=state.expectedShots.length; i<newVal; i++) state.expectedShots.push(5);
+
+            const toggleHelp = () => toggleModal(els.helpModal);
+            const toggleStats = () => toggleModal(els.statsModal);
+
+            const updateGlobal = (v) => { state.globalReceived = parseInt(v)||0; saveState(); };
+            
+            const adjustTargets = (d) => {
+                let n = Math.min(Math.max(1, state.targetCount + d), CONSTANTS.MAX_TARGETS);
+                state.targetCount = n;
+                if (state.expectedShots.length < n) {
+                    for(let i=state.expectedShots.length; i<n; i++) state.expectedShots.push(5);
                 }
-                state.waves.forEach(wave => {
-                    if (wave.targets.length < newVal) {
-                        for(let i=wave.targets.length; i<newVal; i++) {
-                            wave.targets.push({ sent: state.expectedShots[i], recv: '', unfired: '', misfires: '', deformed: '' });
-                        }
-                    } else {
-                        wave.targets.length = newVal;
-                    }
+                state.waves.forEach(w => {
+                    if (w.targets.length < n) {
+                        for(let i=w.targets.length; i<n; i++) w.targets.push({sent:state.expectedShots[i],recv:'',unfired:'',misfires:'',deformed:''});
+                    } else w.targets.length = n;
                 });
-                els.targetInput.value = newVal;
+                els.targetInput.value = n;
                 saveState();
                 renderUI();
             };
-            const updateExpected = (idx, val) => {
-                state.expectedShots[idx] = parseInt(val) || 0;
-                saveState();
-            };
+
+            const updateExpected = (i, v) => { state.expectedShots[i] = parseInt(v)||0; saveState(); };
+
             const addWave = () => {
-                const newId = state.waves.length > 0 ? state.waves[state.waves.length - 1].id + 1 : 1;
-                const newTargets = Array.from({ length: state.targetCount }, (_, i) => ({
-                    sent: state.expectedShots[i] || 0,
-                    recv: '',
-                    unfired: '',
-                    misfires: '',
-                    deformed: ''
+                const id = state.waves.length > 0 ? state.waves[state.waves.length-1].id + 1 : 1;
+                const t = Array.from({length:state.targetCount}, (_,i)=>({
+                    sent:state.expectedShots[i]||0, recv:'', unfired:'', misfires:'', deformed:''
                 }));
-                state.waves.push({ id: newId, targets: newTargets });
+                state.waves.push({id, targets:t});
                 saveState();
                 renderTable();
                 setTimeout(() => {
-                    const wrapper = document.getElementById('tableWrapper');
-                    wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
+                    const wrap = document.getElementById('tableWrapper');
+                    wrap.scrollTo({top: wrap.scrollHeight, behavior:'smooth'});
                 }, 100);
             };
-            const updateCell = (wIdx, tIdx, field, val) => {
-                state.waves[wIdx].targets[tIdx][field] = val;
+
+            const updateCell = (w, t, f, v) => {
+                state.waves[w].targets[t][f] = v;
                 calculateStats();
-                if (app.saveTimer) clearTimeout(app.saveTimer);
-                app.saveTimer = setTimeout(() => {
-                    localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(state));
-                }, 500);
+                if(app.timer) clearTimeout(app.timer);
+                app.timer = setTimeout(()=>localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(state)), 500);
             };
-            // Modal Confirm System
-            let confirmCallback = null;
-            const openConfirm = (title, msg, cb) => {
-                els.modalTitle.textContent = title;
-                els.modalMsg.textContent = msg;
-                confirmCallback = cb;
-                els.modalOverlay.classList.remove('hidden');
-                requestAnimationFrame(() => {
-                    els.modalOverlay.classList.remove('opacity-0');
-                    els.modalBox.classList.remove('scale-95');
-                });
+
+            // Alert System
+            let confirmCb = null;
+            const openAlert = (title, msg, cb) => {
+                els.alertTitle.textContent = title;
+                els.alertMsg.textContent = msg;
+                confirmCb = cb;
+                els.alertModal.classList.remove('pointer-events-none', 'opacity-0');
+                els.alertModal.querySelector('div.transform').classList.remove('scale-95');
             };
-            const closeModal = () => {
-                els.modalOverlay.classList.add('opacity-0');
-                els.modalBox.classList.add('scale-95');
-                setTimeout(() => els.modalOverlay.classList.add('hidden'), 200);
-                confirmCallback = null;
+            const closeAlert = () => {
+                els.alertModal.classList.add('opacity-0');
+                els.alertModal.querySelector('div.transform').classList.add('scale-95');
+                setTimeout(()=>els.alertModal.classList.add('pointer-events-none'), 200);
+                confirmCb = null;
             };
-            els.modalConfirmBtn.onclick = () => {
-                if (confirmCallback) confirmCallback();
-                closeModal();
-            };
-            const deleteWave = (idx) => {
-                openConfirm('刪除波次', `確定要刪除第 ${state.waves[idx].id} 波次嗎？`, () => {
-                    state.waves.splice(idx, 1);
-                    // Reset IDs? Keep logical for now
-                    // state.waves.forEach((w, i) => w.id = i + 1);
-                    saveState();
-                    renderTable();
-                });
-            };
-            const resetData = () => {
-                openConfirm('重置資料', '確定要清空所有紀錄嗎？設定將保留。', () => {
-                    state.waves = [];
-                    saveState();
-                    renderTable();
-                });
-            };
+            els.alertConfirm.onclick = () => { if(confirmCb) confirmCb(); closeAlert(); };
+
+            const deleteWave = (idx) => openAlert('刪除波次', `確定刪除第 ${state.waves[idx].id} 波次？`, () => {
+                state.waves.splice(idx, 1);
+                saveState();
+                renderTable();
+            });
+
+            const resetData = () => openAlert('重置', '確定清空所有資料？', () => {
+                state.waves = [];
+                saveState();
+                renderTable();
+            });
+
             const exportData = () => {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+                const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
                 const a = document.createElement('a');
-                a.href = dataStr;
-                a.download = `range_data_${new Date().toISOString().slice(0,10)}.json`;
+                a.href = str; a.download = `shooting_log_${new Date().toISOString().slice(0,10)}.json`;
                 a.click();
             };
+
             return {
-                init,
-                toggleSettings,
-                toggleStats,
-                toggleHelp,
-                updateGlobal,
-                adjustTargets,
-                updateExpected,
-                addWave,
-                deleteWave,
-                updateCell,
-                resetData,
-                closeModal,
-                exportData
+                init, toggleSettings, toggleHelp, toggleStats,
+                updateGlobal, adjustTargets, updateExpected,
+                addWave, deleteWave, updateCell,
+                resetData, closeAlert, exportData
             };
         })();
+
         window.onload = app.init;
     </script>
 </body>
 </html>
+
