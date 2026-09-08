@@ -1,835 +1,1420 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>靶場數據追蹤 (iPhone Pro Max)</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-color: #007AFF; /* iOS Blue */
-            --danger-color: #FF3B30; /* iOS Red */
-            --success-color: #34C759; /* iOS Green */
-            --bg-color: #F2F2F7; /* iOS System Gray 6 */
-            --card-bg: #FFFFFF;
-            --border-color: #E5E5EA;
-            
-            /* iPhone Notch & Home Bar Safe Areas */
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
-            
-            --header-height: calc(60px + var(--safe-top));
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1220" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="靶場數據追蹤" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
 
-        body {
-            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-color);
-            color: #000;
-            overscroll-behavior-y: none; /* 禁止下拉重整效果 */
-            -webkit-tap-highlight-color: transparent;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden; /* 防止 Body 捲動，改用內部容器捲動 */
-        }
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+  <title>靶場數據追蹤 V2 Pro Max</title>
 
-        /* --- 佈局容器 --- */
-        .app-layout {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-        }
+  <style>
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --bg:#F3F5F8;
+      --card:#FFFFFF;
+      --ink:#111827;
+      --muted:#6B7280;
+      --line:#E5E7EB;
+      --blue:#0A84FF;
+      --blue-soft:#EAF4FF;
+      --green:#30D158;
+      --green-soft:#ECFBF1;
+      --orange:#FF9F0A;
+      --orange-soft:#FFF4E5;
+      --red:#FF453A;
+      --red-soft:#FFF0EF;
+      --purple:#5E5CE6;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --radius:22px;
+    }
 
-        /* --- 1. 頂部狀態列 (HUD) --- */
-        .status-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding-top: var(--safe-top);
-            padding-bottom: 0.75rem;
-            padding-left: 1.25rem;
-            padding-right: 1.25rem;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            z-index: 50;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end; /* 對齊底部 */
-            box-shadow: 0 1px 10px rgba(0,0,0,0.02);
-        }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;height:100%;background:var(--bg);color:var(--ink)}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -webkit-tap-highlight-color:transparent;
+      overscroll-behavior:none;
+      overflow:hidden;
+      touch-action:manipulation;
+    }
+    button,input{font:inherit}
+    button{border:0;background:none}
+    .mono{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
 
-        /* --- 2. 設定面板 (折疊式) --- */
-        .settings-panel {
-            background: var(--bg-color);
-            overflow: hidden;
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 0;
-            border-bottom: 1px solid var(--border-color);
-            z-index: 45;
-            flex-shrink: 0;
-        }
-        .settings-panel.open {
-            max-height: 500px;
-        }
+    .app{
+      height:100vh;
+      height:100dvh;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
 
-        /* --- 3. 表格主體 (可捲動區) --- */
-        .table-scroll-area {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            background: var(--bg-color);
-            padding-bottom: 20px;
-        }
+    /* ===== Top App Bar ===== */
+    .topbar{
+      flex:0 0 auto;
+      padding:calc(var(--safe-top) + 12px) 16px 10px;
+      background:rgba(243,245,248,.90);
+      backdrop-filter:saturate(160%) blur(18px);
+      -webkit-backdrop-filter:saturate(160%) blur(18px);
+      border-bottom:1px solid rgba(17,24,39,.06);
+      z-index:20;
+    }
+    .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{min-width:0}
+    .brand-title{font-size:19px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .icon-btn{
+      width:42px;height:42px;border-radius:50%;
+      display:grid;place-items:center;
+      background:#fff;border:1px solid var(--line);
+      box-shadow:0 4px 12px rgba(15,23,42,.05);
+      color:#334155;
+      font-size:19px;
+    }
+    .icon-btn:active{transform:scale(.96)}
+    .save-pill{
+      height:30px;padding:0 10px;border-radius:999px;
+      display:flex;align-items:center;gap:6px;
+      background:#fff;border:1px solid var(--line);
+      color:var(--muted);font-size:11px;font-weight:700;
+      white-space:nowrap;
+    }
+    .save-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
-            width: 100%;
-            background: var(--bg-color);
-        }
+    /* ===== Scroll Body ===== */
+    .content{
+      flex:1 1 auto;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      padding:14px 14px 120px;
+    }
 
-        th {
-            background: var(--bg-color);
-            color: #8E8E93;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 8px 4px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border-bottom: 1px solid #C6C6C8;
-        }
+    /* ===== Hero ===== */
+    .hero{
+      background:linear-gradient(145deg,#0B1220 0%,#15233B 100%);
+      color:#fff;border-radius:28px;padding:18px;
+      box-shadow:0 18px 40px rgba(11,18,32,.20);
+      position:relative;overflow:hidden;
+    }
+    .hero:after{
+      content:"";position:absolute;right:-50px;top:-70px;width:180px;height:180px;border-radius:50%;
+      background:radial-gradient(circle,rgba(10,132,255,.33),rgba(10,132,255,0) 70%);
+      pointer-events:none;
+    }
+    .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .hero-label{font-size:12px;color:#A8B3C5;font-weight:700;letter-spacing:.04em}
+    .hero-number{display:flex;align-items:flex-end;gap:6px;margin-top:4px}
+    .hero-number strong{font-size:54px;line-height:.95;letter-spacing:-2px}
+    .hero-number span{font-size:15px;color:#B8C2D3;margin-bottom:6px}
+    .hero-badge{
+      border-radius:999px;padding:8px 11px;font-size:12px;font-weight:800;
+      background:rgba(48,209,88,.16);color:#7BEA9C;border:1px solid rgba(123,234,156,.18);
+      display:flex;align-items:center;gap:6px;white-space:nowrap;
+    }
+    .hero-badge.warning{background:rgba(255,159,10,.16);color:#FFC266;border-color:rgba(255,194,102,.18)}
+    .hero-badge.danger{background:rgba(255,69,58,.17);color:#FF8A82;border-color:rgba(255,138,130,.18)}
+    .hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+    .hero-stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:10px}
+    .hero-stat .v{font-size:19px;font-weight:800}
+    .hero-stat .k{font-size:10px;color:#AEB8C8;margin-top:2px}
+    .progress-wrap{margin-top:14px}
+    .progress-track{height:7px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#0A84FF,#64D2FF);border-radius:999px;transition:width .25s ease}
+    .progress-caption{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:#AEB8C8}
 
-        /* 凍結左側波次欄 */
-        .sticky-col-head {
-            left: 0;
-            z-index: 20;
-            background: var(--bg-color);
-            border-right: 1px solid #D1D1D6;
-        }
-        .sticky-col-body {
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            background: var(--bg-color); /* 保持背景色一致 */
-            border-right: 1px solid #D1D1D6;
-            border-bottom: 1px solid #E5E5EA;
-        }
+    /* ===== Segmented ===== */
+    .segmented{
+      margin:14px 0 12px;padding:4px;
+      background:#E7EBF0;border-radius:14px;
+      display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+    }
+    .seg-btn{
+      height:38px;border-radius:10px;font-size:13px;font-weight:800;color:#64748B;
+    }
+    .seg-btn.active{background:#fff;color:#111827;box-shadow:0 2px 8px rgba(15,23,42,.08)}
 
-        td {
-            padding: 8px 6px; /* 增加間距適應大螢幕 */
-            background: #fff;
-            border-bottom: 1px solid #E5E5EA;
-            text-align: center;
-            vertical-align: middle;
-        }
+    /* ===== Generic Card ===== */
+    .card{
+      background:var(--card);border:1px solid rgba(17,24,39,.06);
+      border-radius:var(--radius);box-shadow:var(--shadow);
+    }
 
-        /* --- 優化輸入框 (iPhone Pro Max 尺寸適配) --- */
-        input[type="number"] {
-            font-family: 'Roboto Mono', monospace;
-            width: 100%;
-            min-width: 50px; /* 加寬 */
-            height: 44px;    /* iOS 建議最小觸控高度 */
-            font-size: 1.15rem; /* 字體加大 */
-            text-align: center;
-            padding: 0;
-            background-color: #F9F9F9;
-            border: 1.5px dashed #C7C7CC; /* 虛線框提示 */
-            border-radius: 8px; /* 更圓潤 */
-            color: #000;
-            transition: all 0.2s;
-            -moz-appearance: textfield;
-            touch-action: manipulation; /* 防止雙擊縮放 */
-        }
+    /* ===== Operation panel ===== */
+    .wave-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .wave-title{font-size:13px;color:var(--muted);font-weight:700}
+    .wave-title strong{font-size:18px;color:var(--ink)}
+    .mini-nav{display:flex;gap:8px}
+    .mini-btn{
+      height:36px;min-width:36px;border-radius:12px;background:#fff;border:1px solid var(--line);
+      color:#475569;font-weight:900;
+    }
+    .mini-btn:disabled{opacity:.35}
 
-        input[type="number"]:focus {
-            outline: none;
-            background-color: #FFF;
-            border-style: solid;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
-            transform: scale(1.02);
-            z-index: 2;
-        }
+    .target-card{padding:18px}
+    .target-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .target-kicker{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+    .target-title{font-size:24px;font-weight:900;letter-spacing:-.4px;margin-top:2px}
+    .target-status{
+      padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;
+      background:var(--green-soft);color:#13823B;white-space:nowrap;
+    }
+    .target-status.warn{background:var(--orange-soft);color:#B76B00}
+    .target-status.bad{background:var(--red-soft);color:#C92E25}
 
-        /* 設定區輸入框 */
-        .settings-input {
-            border-style: solid !important;
-            background: #fff !important;
-            border-color: #C7C7CC !important;
-        }
+    .pair-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+    .input-card{
+      border:1px solid var(--line);border-radius:18px;padding:12px;background:#FBFCFE;
+    }
+    .input-label{font-size:12px;font-weight:800;color:#64748B;margin-bottom:8px}
+    .big-input{
+      width:100%;height:68px;border-radius:15px;border:2px solid transparent;
+      background:#fff;text-align:center;font-size:32px;font-weight:900;color:#111827;
+      outline:none;box-shadow:inset 0 0 0 1px #E4E8EE;
+    }
+    .big-input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(10,132,255,.12)}
+    .big-input.recv{color:#118C3B}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
-        input::placeholder { color: #C7C7CC; font-weight: 300; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .quick-row{display:flex;gap:8px;margin-top:8px}
+    .quick-btn{
+      flex:1;height:34px;border-radius:10px;background:#EEF2F7;color:#475569;font-size:12px;font-weight:800;
+    }
+    .quick-btn:active{background:#E2E8F0}
 
-        /* --- 4. 底部按鈕區 --- */
-        .footer-bar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(0,0,0,0.1);
-            padding: 1rem 1.25rem;
-            padding-bottom: max(1rem, var(--safe-bottom)); /* 適配 Home Bar */
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            z-index: 50;
-            flex-shrink: 0;
-        }
+    .reconcile{
+      margin-top:14px;border-radius:16px;padding:12px 13px;
+      display:flex;align-items:center;gap:10px;background:var(--green-soft);color:#17733A;
+      font-size:13px;font-weight:800;
+    }
+    .reconcile.warn{background:var(--orange-soft);color:#A95D00}
+    .reconcile.bad{background:var(--red-soft);color:#B8261E}
+    .reconcile-icon{font-size:18px}
+    .reconcile small{display:block;font-size:10px;font-weight:600;opacity:.78;margin-top:1px}
 
-        /* iOS 風格按鈕 */
-        .btn-ios {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1.05rem;
-            padding: 12px;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-            transition: transform 0.1s, opacity 0.1s;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-ios:active { transform: scale(0.97); opacity: 0.9; }
+    .anomaly{
+      margin-top:12px;padding-top:14px;border-top:1px dashed var(--line);
+    }
+    .anomaly-title{font-size:12px;color:#64748B;font-weight:800;margin-bottom:10px}
+    .anomaly-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .counter{
+      border:1px solid var(--line);border-radius:15px;padding:9px;background:#FAFBFC;text-align:center
+    }
+    .counter .name{font-size:11px;color:#64748B;font-weight:800}
+    .counter .value{font-size:24px;font-weight:900;margin:4px 0}
+    .counter-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .counter-actions button{height:30px;border-radius:9px;background:#EDF1F5;font-weight:900;color:#334155}
+    .counter-actions button:active{transform:scale(.97)}
 
-        /* --- Modals (卡片式) --- */
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(4px);
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .modal-card {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #fff;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            padding: 24px;
-            padding-bottom: max(24px, var(--safe-bottom));
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            z-index: 101;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-        }
-        .modal-open .modal-backdrop { opacity: 1; pointer-events: auto; }
-        .modal-open .modal-card { transform: translateY(0); }
+    .hint-card{
+      margin-top:12px;padding:14px 15px;background:#fff;border:1px solid var(--line);border-radius:18px;
+      color:#475569;font-size:12px;line-height:1.5;
+    }
+    .hint-card strong{color:#111827}
 
-        /* 說明書樣式 */
-        .manual-item {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px dashed #E5E5EA;
-        }
-        .manual-num {
-            background: var(--primary-color);
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-        .manual-content h4 { font-weight: 700; color: #1C1C1E; margin-bottom: 4px; font-size: 1.05rem; }
-        .manual-content p { color: #3A3A3C; font-size: 0.95rem; line-height: 1.5; }
+    .empty{
+      text-align:center;padding:42px 20px;color:#64748B
+    }
+    .empty-emoji{font-size:38px;margin-bottom:8px}
+    .empty-title{font-size:18px;font-weight:900;color:#1F2937}
+    .empty p{font-size:13px;line-height:1.6;margin:6px auto 16px;max-width:280px}
+    .primary-btn{
+      height:48px;border-radius:14px;padding:0 18px;
+      background:var(--blue);color:white;font-weight:900;font-size:15px;
+      box-shadow:0 10px 20px rgba(10,132,255,.22);
+    }
+    .primary-btn:active{transform:scale(.98)}
+    .secondary-btn{
+      height:44px;border-radius:13px;padding:0 15px;background:#EEF2F7;color:#334155;font-weight:800;
+    }
+    .danger-btn{
+      height:44px;border-radius:13px;padding:0 15px;background:var(--red-soft);color:#C72B22;font-weight:900;
+    }
 
-        /* 標籤小工具 */
-        .tag-diff {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-    </style>
+    /* ===== Records ===== */
+    .record-list{display:flex;flex-direction:column;gap:10px}
+    .record-card{padding:14px}
+    .record-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .record-title{font-size:16px;font-weight:900}
+    .record-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .record-status{font-size:11px;font-weight:900;padding:6px 9px;border-radius:999px;background:var(--green-soft);color:#1A7C3D}
+    .record-status.bad{background:var(--red-soft);color:#C72B22}
+    .record-targets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+    .record-target{border:1px solid var(--line);border-radius:13px;padding:9px;background:#FAFBFC}
+    .record-target-top{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#64748B}
+    .record-target-values{font-size:12px;color:#334155;margin-top:6px;line-height:1.5}
+    .record-actions{display:flex;justify-content:flex-end;margin-top:10px}
+
+    /* ===== Stats ===== */
+    .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .stat-card{padding:16px}
+    .stat-card .k{font-size:11px;color:#64748B;font-weight:800}
+    .stat-card .v{font-size:30px;font-weight:900;margin-top:4px}
+    .stat-card .sub{font-size:10px;color:#94A3B8;margin-top:2px}
+    .stat-card.wide{grid-column:1 / -1}
+    .summary-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #EEF2F7}
+    .summary-row:last-child{border-bottom:0}
+    .summary-row .k{font-size:13px;color:#64748B}
+    .summary-row .v{font-size:16px;font-weight:900}
+    .stats-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+    /* ===== Bottom action ===== */
+    .bottom-action{
+      position:fixed;left:0;right:0;bottom:0;z-index:30;
+      padding:10px 14px calc(max(10px,var(--safe-bottom)) + 2px);
+      background:rgba(255,255,255,.93);
+      backdrop-filter:saturate(170%) blur(22px);
+      -webkit-backdrop-filter:saturate(170%) blur(22px);
+      border-top:1px solid rgba(17,24,39,.08);
+    }
+    .action-grid{display:grid;grid-template-columns:54px 1fr 54px;gap:10px;max-width:600px;margin:auto}
+    .action-square{
+      height:54px;border-radius:17px;background:#EEF2F7;color:#334155;font-size:20px;font-weight:900;
+    }
+    .action-square:disabled{opacity:.35}
+    .action-main{
+      height:54px;border-radius:17px;background:var(--blue);color:#fff;
+      font-weight:900;font-size:15px;box-shadow:0 10px 22px rgba(10,132,255,.24);
+    }
+    .action-main.good{background:#20B850;box-shadow:0 10px 22px rgba(32,184,80,.22)}
+    .action-main.warn{background:var(--orange);box-shadow:0 10px 22px rgba(255,159,10,.22)}
+    .action-main:active,.action-square:active{transform:scale(.98)}
+
+    /* ===== Sheets ===== */
+    .sheet-backdrop{
+      position:fixed;inset:0;background:rgba(15,23,42,.38);
+      opacity:0;pointer-events:none;transition:.22s;z-index:60;
+      backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)
+    }
+    .sheet{
+      position:fixed;left:0;right:0;bottom:0;z-index:61;
+      background:#F8FAFC;border-radius:26px 26px 0 0;
+      transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+      max-height:88dvh;overflow:auto;
+      padding:8px 14px calc(max(18px,var(--safe-bottom)) + 4px);
+      box-shadow:0 -18px 50px rgba(15,23,42,.18);
+    }
+    .sheet.open{transform:translateY(0)}
+    .sheet-backdrop.open{opacity:1;pointer-events:auto}
+    .grabber{width:42px;height:5px;border-radius:999px;background:#CDD5DF;margin:2px auto 12px}
+    .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .sheet-title{font-size:20px;font-weight:900}
+    .sheet-close{width:36px;height:36px;border-radius:50%;background:#E8EDF3;color:#64748B;font-size:18px}
+    .setting-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}
+    .setting-label{font-size:12px;color:#64748B;font-weight:800;margin-bottom:8px}
+    .setting-input{
+      width:100%;height:48px;border:1px solid #D8DEE7;border-radius:13px;background:#FBFCFE;
+      padding:0 12px;font-size:20px;font-weight:900;outline:none;text-align:center;
+    }
+    .setting-input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(10,132,255,.1)}
+    .stepper{display:grid;grid-template-columns:50px 1fr 50px;gap:8px}
+    .stepper button{height:48px;border-radius:13px;background:#EEF2F7;font-size:22px;font-weight:900;color:#334155}
+    .expected-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .expected-item label{display:block;text-align:center;font-size:10px;color:#64748B;font-weight:800;margin-bottom:4px}
+    .expected-item input{height:42px;font-size:16px;padding:0 4px}
+    .sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .sheet-actions .primary-btn,.sheet-actions .secondary-btn,.sheet-actions .danger-btn{width:100%}
+    .setting-note{font-size:11px;color:#94A3B8;line-height:1.5;margin-top:7px}
+
+    /* ===== Alert ===== */
+    .alert-wrap{
+      position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:20px;
+      opacity:0;pointer-events:none;transition:.18s;
+    }
+    .alert-wrap.open{opacity:1;pointer-events:auto}
+    .alert-bg{position:absolute;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(3px)}
+    .alert-card{
+      width:min(340px,90vw);position:relative;background:#fff;border-radius:22px;padding:18px;box-shadow:0 24px 70px rgba(15,23,42,.28)
+    }
+    .alert-title{font-size:18px;font-weight:900}
+    .alert-msg{font-size:13px;line-height:1.55;color:#64748B;margin-top:6px}
+    .alert-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+    .alert-actions button{height:44px;border-radius:13px;font-weight:900}
+    .alert-cancel{background:#EEF2F7;color:#334155}
+    .alert-ok{background:var(--red);color:#fff}
+
+    /* ===== Toast ===== */
+    .toast{
+      position:fixed;left:50%;bottom:calc(84px + var(--safe-bottom));transform:translate(-50%,20px);
+      z-index:100;background:#111827;color:#fff;border-radius:999px;padding:10px 14px;
+      font-size:12px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;white-space:nowrap;
+      box-shadow:0 12px 30px rgba(15,23,42,.24)
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .toast button{color:#69B8FF;font-weight:900;margin-left:8px}
+
+    /* ===== Keyboard / orientation tweaks ===== */
+    @media (max-width:390px){
+      .hero-number strong{font-size:48px}
+      .pair-grid{gap:8px}
+      .target-card{padding:15px}
+      .anomaly-grid{gap:6px}
+      .expected-grid{grid-template-columns:repeat(3,1fr)}
+    }
+    @media (orientation:landscape) and (max-height:500px){
+      .hero{padding:14px}
+      .hero-number strong{font-size:40px}
+      .hero-grid{margin-top:10px}
+      .content{padding-bottom:88px}
+    }
+  </style>
 </head>
+
 <body>
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-title">靶場數據追蹤</div>
+        <div class="brand-sub">V2.0 Pro Max・智慧勤務版</div>
+      </div>
+      <div class="top-actions">
+        <div class="save-pill"><span class="save-dot"></span><span id="saveText">已儲存</span></div>
+        <button class="icon-btn" id="settingsBtn" aria-label="設定">⚙︎</button>
+      </div>
+    </div>
+  </header>
 
-    <div class="app-layout">
-        
-        <!-- 1. 頂部狀態列 -->
-        <header class="status-header">
-            <!-- 左側：剩餘彈藥 -->
-            <div class="flex items-center gap-4">
+  <main class="content" id="content">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-label">剩餘彈藥</div>
+          <div class="hero-number mono"><strong id="remainingShots">0</strong><span>發</span></div>
+        </div>
+        <div class="hero-badge" id="globalStatusBadge">● 帳目正常</div>
+      </div>
+
+      <div class="hero-grid">
+        <div class="hero-stat">
+          <div class="v mono" id="heroConsumed">0</div>
+          <div class="k">已消耗</div>
+        </div>
+        <div class="hero-stat">
+          <div class="v mono" id="heroWaves">0</div>
+          <div class="k">完整波次</div>
+        </div>
+        <div class="hero-stat">
+          <div class="v mono" id="heroAnomaly">0</div>
+          <div class="k">異常彈藥</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-caption">
+          <span>使用進度</span>
+          <span class="mono" id="progressText">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="segmented" aria-label="功能分頁">
+      <button class="seg-btn active" data-view="operate">操作</button>
+      <button class="seg-btn" data-view="records">紀錄</button>
+      <button class="seg-btn" data-view="stats">統計</button>
+    </nav>
+
+    <section id="operateView"></section>
+    <section id="recordsView" hidden></section>
+    <section id="statsView" hidden></section>
+  </main>
+
+  <div class="bottom-action" id="bottomAction">
+    <div class="action-grid">
+      <button class="action-square" id="prevTargetBtn" aria-label="上一靶">‹</button>
+      <button class="action-main" id="mainActionBtn">＋ 新增第一波</button>
+      <button class="action-square" id="nextTargetBtn" aria-label="下一靶">›</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Sheet -->
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<section class="sheet" id="settingsSheet" aria-modal="true" role="dialog">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <div class="sheet-title">基礎設定</div>
+    <button class="sheet-close" id="closeSettings">×</button>
+  </div>
+
+  <div class="setting-card">
+    <div class="setting-label">總領取發數</div>
+    <input class="setting-input mono" type="number" inputmode="numeric" min="0" id="globalReceivedInput" placeholder="0">
+    <div class="setting-note">這是整場勤務可使用的總彈藥基準。</div>
+  </div>
+
+  <div class="setting-card">
+    <div class="setting-label">靶位數量</div>
+    <div class="stepper">
+      <button id="targetMinus">−</button>
+      <input class="setting-input mono" type="number" id="targetCountInput" readonly>
+      <button id="targetPlus">＋</button>
+    </div>
+    <div class="setting-note">建議現場只保留實際使用靶位，操作會更快。</div>
+  </div>
+
+  <div class="setting-card">
+    <div class="setting-label">每靶預設送出發數</div>
+    <div class="expected-grid" id="expectedGrid"></div>
+  </div>
+
+  <div class="setting-card">
+    <div class="setting-label">資料管理</div>
+    <div class="sheet-actions">
+      <button class="secondary-btn" id="exportJsonBtn">匯出 JSON</button>
+      <button class="secondary-btn" id="exportCsvBtn">匯出 CSV</button>
+      <button class="secondary-btn" id="importBtn">匯入備份</button>
+      <button class="danger-btn" id="resetBtn">重置紀錄</button>
+    </div>
+    <input type="file" accept=".json,application/json" id="importFile" hidden>
+  </div>
+
+  <button class="primary-btn" id="doneSettings" style="width:100%;margin-top:2px">完成設定</button>
+</section>
+
+<!-- Alert -->
+<div class="alert-wrap" id="alertWrap">
+  <div class="alert-bg"></div>
+  <div class="alert-card">
+    <div class="alert-title" id="alertTitle">確認</div>
+    <div class="alert-msg" id="alertMsg"></div>
+    <div class="alert-actions">
+      <button class="alert-cancel" id="alertCancel">取消</button>
+      <button class="alert-ok" id="alertOk">確定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "shooting_tracker_v2";
+  const OLD_STORAGE_KEY = "shooting_tracker_promax_v1";
+  const MAX_TARGETS = 50;
+
+  const $ = (q, root=document) => root.querySelector(q);
+  const $$ = (q, root=document) => [...root.querySelectorAll(q)];
+
+  const defaultState = {
+    version: 2,
+    globalReceived: 0,
+    targetCount: 2,
+    expectedShots: [5,5],
+    waves: [],
+    activeWaveIndex: 0,
+    activeTargetIndex: 0,
+    view: "operate",
+    updatedAt: Date.now()
+  };
+
+  let state = structuredCloneSafe(defaultState);
+  let lastDeleted = null;
+  let saveTimer = null;
+  let alertConfirm = null;
+
+  const els = {
+    remainingShots: $("#remainingShots"),
+    heroConsumed: $("#heroConsumed"),
+    heroWaves: $("#heroWaves"),
+    heroAnomaly: $("#heroAnomaly"),
+    globalStatusBadge: $("#globalStatusBadge"),
+    progressBar: $("#progressBar"),
+    progressText: $("#progressText"),
+    saveText: $("#saveText"),
+    operateView: $("#operateView"),
+    recordsView: $("#recordsView"),
+    statsView: $("#statsView"),
+    bottomAction: $("#bottomAction"),
+    prevTargetBtn: $("#prevTargetBtn"),
+    nextTargetBtn: $("#nextTargetBtn"),
+    mainActionBtn: $("#mainActionBtn"),
+    settingsBtn: $("#settingsBtn"),
+    settingsSheet: $("#settingsSheet"),
+    sheetBackdrop: $("#sheetBackdrop"),
+    closeSettings: $("#closeSettings"),
+    doneSettings: $("#doneSettings"),
+    globalReceivedInput: $("#globalReceivedInput"),
+    targetCountInput: $("#targetCountInput"),
+    targetMinus: $("#targetMinus"),
+    targetPlus: $("#targetPlus"),
+    expectedGrid: $("#expectedGrid"),
+    exportJsonBtn: $("#exportJsonBtn"),
+    exportCsvBtn: $("#exportCsvBtn"),
+    importBtn: $("#importBtn"),
+    importFile: $("#importFile"),
+    resetBtn: $("#resetBtn"),
+    alertWrap: $("#alertWrap"),
+    alertTitle: $("#alertTitle"),
+    alertMsg: $("#alertMsg"),
+    alertCancel: $("#alertCancel"),
+    alertOk: $("#alertOk"),
+    toast: $("#toast")
+  };
+
+  function structuredCloneSafe(obj){
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function num(v){
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+
+  function clamp(n, min, max){
+    return Math.min(Math.max(n, min), max);
+  }
+
+  function makeTarget(i){
+    return {
+      sent: num(state.expectedShots[i]),
+      recv: 0,
+      unfired: 0,
+      misfires: 0,
+      deformed: 0
+    };
+  }
+
+  function migrateOld(old){
+    const migrated = structuredCloneSafe(defaultState);
+    migrated.globalReceived = num(old.globalReceived);
+    migrated.targetCount = clamp(num(old.targetCount) || 2, 1, MAX_TARGETS);
+    migrated.expectedShots = Array.from({length:migrated.targetCount}, (_,i) =>
+      num(old.expectedShots?.[i] ?? 5)
+    );
+
+    migrated.waves = Array.isArray(old.waves) ? old.waves.map((w, idx) => ({
+      id: num(w.id) || idx + 1,
+      createdAt: Date.now(),
+      targets: Array.from({length:migrated.targetCount}, (_,i) => {
+        const t = w.targets?.[i] || {};
+        return {
+          sent: num(t.sent),
+          recv: num(t.recv),
+          unfired: num(t.unfired),
+          misfires: num(t.misfires),
+          deformed: num(t.deformed)
+        };
+      })
+    })) : [];
+
+    migrated.activeWaveIndex = Math.max(0, migrated.waves.length - 1);
+    migrated.activeTargetIndex = 0;
+    return migrated;
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        state = {...structuredCloneSafe(defaultState), ...parsed};
+      }else{
+        const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
+        if(oldRaw){
+          state = migrateOld(JSON.parse(oldRaw));
+          saveNow();
+          showToast("已自動帶入舊版資料");
+        }
+      }
+    }catch(err){
+      console.error(err);
+      state = structuredCloneSafe(defaultState);
+    }
+
+    normalizeState();
+  }
+
+  function normalizeState(){
+    state.targetCount = clamp(num(state.targetCount) || 1, 1, MAX_TARGETS);
+    state.expectedShots = Array.from({length:state.targetCount}, (_,i) =>
+      num(state.expectedShots?.[i] ?? 5)
+    );
+    state.waves = Array.isArray(state.waves) ? state.waves : [];
+
+    state.waves.forEach((w, wi) => {
+      w.id = num(w.id) || wi + 1;
+      w.createdAt = w.createdAt || Date.now();
+      w.targets = Array.from({length:state.targetCount}, (_,i) => {
+        const t = w.targets?.[i] || {};
+        return {
+          sent: num(t.sent),
+          recv: num(t.recv),
+          unfired: num(t.unfired),
+          misfires: num(t.misfires),
+          deformed: num(t.deformed)
+        };
+      });
+    });
+
+    state.activeWaveIndex = clamp(num(state.activeWaveIndex), 0, Math.max(0,state.waves.length-1));
+    state.activeTargetIndex = clamp(num(state.activeTargetIndex), 0, Math.max(0,state.targetCount-1));
+    if(!["operate","records","stats"].includes(state.view)) state.view = "operate";
+  }
+
+  function saveNow(){
+    state.updatedAt = Date.now();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    els.saveText.textContent = "已儲存";
+  }
+
+  function scheduleSave(){
+    els.saveText.textContent = "儲存中…";
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 250);
+  }
+
+  function getTargetDiff(t){
+    return num(t.sent) - num(t.recv) - num(t.unfired) - num(t.misfires) - num(t.deformed);
+  }
+
+  function getStats(){
+    const s = {
+      sent:0, recv:0, unfired:0, misfires:0, deformed:0,
+      mismatch:0, mismatchTargets:0
+    };
+
+    state.waves.forEach(w => w.targets.forEach(t => {
+      s.sent += num(t.sent);
+      s.recv += num(t.recv);
+      s.unfired += num(t.unfired);
+      s.misfires += num(t.misfires);
+      s.deformed += num(t.deformed);
+
+      const d = getTargetDiff(t);
+      if(d !== 0){
+        s.mismatch += Math.abs(d);
+        s.mismatchTargets += 1;
+      }
+    }));
+
+    // 保留舊版「實際消耗」邏輯：送出 - 未擊發
+    s.consumed = s.sent - s.unfired;
+    s.remaining = state.globalReceived - s.consumed;
+    s.anomaly = s.unfired + s.misfires + s.deformed;
+
+    const shotsPerWave = state.expectedShots.reduce((a,b)=>a+num(b),0);
+    s.fullWaves = shotsPerWave > 0 && s.remaining > 0 ? Math.floor(s.remaining / shotsPerWave) : 0;
+    s.waveRemainder = shotsPerWave > 0 && s.remaining > 0 ? s.remaining % shotsPerWave : 0;
+
+    return s;
+  }
+
+  function getGlobalStatus(stats){
+    if(stats.remaining < 0) return {type:"danger", text:"● 剩餘為負"};
+    if(stats.mismatchTargets > 0) return {type:"warning", text:`● ${stats.mismatchTargets} 靶待核對`};
+    return {type:"ok", text:"● 帳目正常"};
+  }
+
+  function renderHero(){
+    const s = getStats();
+    els.remainingShots.textContent = s.remaining;
+    els.heroConsumed.textContent = s.consumed;
+    els.heroWaves.textContent = s.fullWaves;
+    els.heroAnomaly.textContent = s.anomaly;
+
+    const status = getGlobalStatus(s);
+    els.globalStatusBadge.className = "hero-badge" + (status.type==="warning" ? " warning" : status.type==="danger" ? " danger" : "");
+    els.globalStatusBadge.textContent = status.text;
+
+    let pct = 0;
+    if(state.globalReceived > 0){
+      pct = clamp(Math.round((s.consumed / state.globalReceived) * 100), 0, 100);
+    }
+    els.progressBar.style.width = pct + "%";
+    els.progressText.textContent = pct + "%";
+  }
+
+  function currentWave(){
+    return state.waves[state.activeWaveIndex] || null;
+  }
+
+  function currentTarget(){
+    return currentWave()?.targets?.[state.activeTargetIndex] || null;
+  }
+
+  function targetStatus(t){
+    const d = getTargetDiff(t);
+    if(num(t.sent) === 0 && num(t.recv) === 0 && num(t.unfired) === 0 && num(t.misfires) === 0 && num(t.deformed) === 0){
+      return {cls:"warn", text:"尚未輸入", message:"請先確認送出數，再輸入回收數。"};
+    }
+    if(d === 0){
+      return {cls:"", text:"✓ 數量相符", message:"送出、回收與異常彈藥已完成核對。"};
+    }
+    if(d > 0){
+      return {cls:"warn", text:`差 ${d} 發`, message:`還有 ${d} 發尚未歸類，請確認未擊發、不發彈或變形彈。`};
+    }
+    return {cls:"bad", text:`多 ${Math.abs(d)} 發`, message:`目前登記數比送出數多 ${Math.abs(d)} 發，請檢查輸入。`};
+  }
+
+  function renderOperate(){
+    const w = currentWave();
+
+    if(!w){
+      els.operateView.innerHTML = `
+        <div class="card empty">
+          <div class="empty-emoji">🎯</div>
+          <div class="empty-title">準備開始第一波</div>
+          <p>先到右上角設定總領取發數與靶位。完成後按下方「新增第一波」。</p>
+          <button class="primary-btn" data-open-settings>開啟設定</button>
+        </div>`;
+      bindOperateEvents();
+      return;
+    }
+
+    const t = currentTarget();
+    const st = targetStatus(t);
+    const diff = getTargetDiff(t);
+    const showAnomaly = diff !== 0 || num(t.unfired)+num(t.misfires)+num(t.deformed) > 0;
+
+    els.operateView.innerHTML = `
+      <div class="wave-strip">
+        <div class="wave-title"><strong>第 ${w.id} 波</strong>　靶位 ${state.activeTargetIndex+1} / ${state.targetCount}</div>
+        <div class="mini-nav">
+          <button class="mini-btn" data-prev-wave ${state.activeWaveIndex===0 ? "disabled":""}>‹</button>
+          <button class="mini-btn" data-next-wave ${state.activeWaveIndex===state.waves.length-1 ? "disabled":""}>›</button>
+        </div>
+      </div>
+
+      <div class="card target-card">
+        <div class="target-head">
+          <div>
+            <div class="target-kicker">CURRENT TARGET</div>
+            <div class="target-title">靶位 ${state.activeTargetIndex+1}</div>
+          </div>
+          <div class="target-status ${st.cls}">${st.text}</div>
+        </div>
+
+        <div class="pair-grid">
+          <div class="input-card">
+            <div class="input-label">送出</div>
+            <input class="big-input mono" id="sentInput" type="number" inputmode="numeric" min="0" value="${num(t.sent)}">
+            <div class="quick-row">
+              <button class="quick-btn" data-set-sent="${num(state.expectedShots[state.activeTargetIndex])}">預設 ${num(state.expectedShots[state.activeTargetIndex])}</button>
+              <button class="quick-btn" data-adjust="sent:-1">−1</button>
+              <button class="quick-btn" data-adjust="sent:1">+1</button>
+            </div>
+          </div>
+
+          <div class="input-card">
+            <div class="input-label">回收彈殼</div>
+            <input class="big-input recv mono" id="recvInput" type="number" inputmode="numeric" min="0" value="${num(t.recv)}">
+            <div class="quick-row">
+              <button class="quick-btn" data-copy-sent>同送出</button>
+              <button class="quick-btn" data-adjust="recv:-1">−1</button>
+              <button class="quick-btn" data-adjust="recv:1">+1</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="reconcile ${st.cls==="warn" ? "warn" : st.cls==="bad" ? "bad" : ""}">
+          <div class="reconcile-icon">${st.cls==="bad" ? "⛔" : st.cls==="warn" ? "⚠️" : "✓"}</div>
+          <div>${st.text}<small>${st.message}</small></div>
+        </div>
+
+        <div class="anomaly" ${showAnomaly ? "" : "hidden"}>
+          <div class="anomaly-title">${diff === 0 ? "異常彈藥紀錄" : "請將差異分類到正確項目"}</div>
+          <div class="anomaly-grid">
+            ${counterHTML("unfired","未擊發",num(t.unfired))}
+            ${counterHTML("misfires","不發彈",num(t.misfires))}
+            ${counterHTML("deformed","變形彈",num(t.deformed))}
+          </div>
+        </div>
+      </div>
+
+      <div class="hint-card">
+        <strong>智慧提示：</strong>
+        ${getSmartHint(t)}
+      </div>
+    `;
+
+    bindOperateEvents();
+  }
+
+  function counterHTML(field, label, value){
+    return `
+      <div class="counter">
+        <div class="name">${label}</div>
+        <div class="value mono">${value}</div>
+        <div class="counter-actions">
+          <button data-counter="${field}:-1">−</button>
+          <button data-counter="${field}:1">＋</button>
+        </div>
+      </div>`;
+  }
+
+  function getSmartHint(t){
+    const d = getTargetDiff(t);
+    const s = getStats();
+
+    if(state.globalReceived <= 0) return "尚未設定總領取發數，右上角 ⚙︎ 設定後才能正確計算剩餘彈藥。";
+    if(s.remaining < 0) return "總送出已超過目前可用彈藥，請立即核對總領取發數或本波送出數。";
+    if(d < 0) return "登記數大於送出數，優先檢查回收彈殼與異常彈藥是否重複輸入。";
+    if(d > 0) return `目前還差 ${d} 發。若確定沒有異常彈藥，請重新檢查回收彈殼數。`;
+    if(s.fullWaves === 0 && s.remaining > 0) return `目前剩 ${s.remaining} 發，不足下一個完整波次。`;
+    return "本靶數量已相符，可以直接前往下一靶。";
+  }
+
+  function bindOperateEvents(){
+    $("[data-open-settings]", els.operateView)?.addEventListener("click", openSettings);
+    $("[data-prev-wave]", els.operateView)?.addEventListener("click", () => {
+      state.activeWaveIndex = clamp(state.activeWaveIndex-1,0,state.waves.length-1);
+      state.activeTargetIndex = 0;
+      scheduleSave(); renderAll();
+    });
+    $("[data-next-wave]", els.operateView)?.addEventListener("click", () => {
+      state.activeWaveIndex = clamp(state.activeWaveIndex+1,0,state.waves.length-1);
+      state.activeTargetIndex = 0;
+      scheduleSave(); renderAll();
+    });
+
+    const sent = $("#sentInput", els.operateView);
+    const recv = $("#recvInput", els.operateView);
+
+    sent?.addEventListener("input", e => updateField("sent", e.target.value, false));
+    recv?.addEventListener("input", e => updateField("recv", e.target.value, false));
+    sent?.addEventListener("change", () => renderAll());
+    recv?.addEventListener("change", () => renderAll());
+
+    $$("[data-adjust]", els.operateView).forEach(btn => btn.addEventListener("click", () => {
+      const [field,delta] = btn.dataset.adjust.split(":");
+      adjustField(field, parseInt(delta));
+    }));
+
+    $("[data-set-sent]", els.operateView)?.addEventListener("click", e => {
+      updateField("sent", e.currentTarget.dataset.setSent);
+      $("#recvInput", els.operateView)?.focus();
+    });
+
+    $("[data-copy-sent]", els.operateView)?.addEventListener("click", () => {
+      const t = currentTarget();
+      updateField("recv", t.sent);
+    });
+
+    $$("[data-counter]", els.operateView).forEach(btn => btn.addEventListener("click", () => {
+      const [field,delta] = btn.dataset.counter.split(":");
+      adjustField(field, parseInt(delta));
+    }));
+  }
+
+  function updateField(field, value, rerender=true){
+    const t = currentTarget();
+    if(!t) return;
+    t[field] = num(value);
+    scheduleSave();
+    if(rerender) renderAll();
+    else {
+      renderHero();
+      renderBottomAction();
+    }
+  }
+
+  function adjustField(field, delta){
+    const t = currentTarget();
+    if(!t) return;
+    t[field] = Math.max(0, num(t[field]) + delta);
+    scheduleSave();
+    renderAll();
+  }
+
+  function renderRecords(){
+    if(state.waves.length === 0){
+      els.recordsView.innerHTML = `<div class="card empty"><div class="empty-emoji">🧾</div><div class="empty-title">目前沒有紀錄</div><p>新增波次後，完整紀錄會自動整理在這裡。</p></div>`;
+      return;
+    }
+
+    els.recordsView.innerHTML = `
+      <div class="record-list">
+        ${state.waves.map((w,wi) => {
+          const badTargets = w.targets.filter(t => getTargetDiff(t)!==0).length;
+          return `
+            <div class="card record-card">
+              <div class="record-head">
                 <div>
-                    <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">剩餘彈藥</div>
-                    <div id="remainingShots" class="text-3xl font-bold text-emerald-600 leading-none tabular-nums font-mono">0</div>
+                  <div class="record-title">第 ${w.id} 波</div>
+                  <div class="record-meta">${w.targets.length} 個靶位</div>
                 </div>
-                <div class="h-8 w-px bg-gray-300 mx-1"></div>
-                <div>
-                    <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">剩餘波次</div>
-                    <div class="flex items-baseline">
-                        <span id="remainingWaves" class="text-2xl font-bold text-indigo-600 leading-none tabular-nums font-mono">0</span>
-                        <span id="partialWave" class="text-xs text-indigo-400 font-bold ml-1 hidden"></span>
+                <div class="record-status ${badTargets ? "bad":""}">${badTargets ? `${badTargets} 靶待核對` : "✓ 全部相符"}</div>
+              </div>
+              <div class="record-targets">
+                ${w.targets.map((t,ti) => `
+                  <div class="record-target" data-open-target="${wi}:${ti}">
+                    <div class="record-target-top">
+                      <span>靶位 ${ti+1}</span>
+                      <span>${getTargetDiff(t)===0 ? "✓":"⚠"}</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- 右側：功能按鈕 -->
-            <div class="flex gap-1">
-                <button onclick="app.toggleHelp()" class="w-10 h-10 rounded-full bg-gray-100 text-blue-600 flex items-center justify-center active:bg-gray-200 transition">
-                    <i class="fas fa-book-open text-lg"></i>
-                </button>
-                <button onclick="app.toggleStats()" class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:bg-gray-200 transition">
-                    <i class="fas fa-chart-pie text-lg"></i>
-                </button>
-                <button onclick="app.toggleSettings()" id="settingsBtn" class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active:bg-gray-200 transition relative">
-                    <i class="fas fa-cog text-lg"></i>
-                    <span id="settingsDot" class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white hidden"></span>
-                </button>
-            </div>
-        </header>
-
-        <!-- 2. 設定面板 -->
-        <div id="settingsPanel" class="settings-panel">
-            <div class="p-5">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-gray-500 uppercase">基礎設定</h3>
-                    <button onclick="app.resetData()" class="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg font-medium">重置資料</button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-5 mb-5">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-2 font-medium">總領取發數 <span class="text-red-500">*</span></label>
-                        <input type="number" id="globalReceivedShots" oninput="app.updateGlobal(this.value)" class="settings-input text-xl font-bold text-blue-600" placeholder="0">
+                    <div class="record-target-values mono">
+                      送 ${num(t.sent)} ・ 收 ${num(t.recv)}<br>
+                      未 ${num(t.unfired)} ・ 壞 ${num(t.misfires)} ・ 變 ${num(t.deformed)}
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-2 font-medium">靶位數量</label>
-                        <div class="flex items-center bg-white rounded-lg border border-gray-300 h-[44px]">
-                            <button onclick="app.adjustTargets(-1)" class="w-12 h-full text-gray-500 active:bg-gray-100 border-r text-xl font-bold">-</button>
-                            <input type="number" id="numberOfTargets" readonly class="w-full text-center font-bold !bg-transparent !border-none !shadow-none text-lg" value="2">
-                            <button onclick="app.adjustTargets(1)" class="w-12 h-full text-gray-500 active:bg-gray-100 border-l text-xl font-bold">+</button>
-                        </div>
-                    </div>
-                </div>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="record-actions">
+                <button class="danger-btn" data-delete-wave="${wi}">刪除本波</button>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>`;
 
-                <div class="mb-4">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">每靶預設發數 (自動填入)</h3>
-                    <div id="expected-shots-container" class="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
-                        <!-- JS 生成 -->
-                    </div>
-                </div>
+    $$("[data-open-target]", els.recordsView).forEach(el => el.addEventListener("click", () => {
+      const [wi,ti] = el.dataset.openTarget.split(":").map(Number);
+      state.activeWaveIndex = wi;
+      state.activeTargetIndex = ti;
+      setView("operate");
+    }));
 
-                <button onclick="app.toggleSettings()" class="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm">
-                    <i class="fas fa-chevron-up mr-1"></i> 收起設定
-                </button>
-            </div>
+    $$("[data-delete-wave]", els.recordsView).forEach(btn => btn.addEventListener("click", () => {
+      deleteWave(parseInt(btn.dataset.deleteWave));
+    }));
+  }
+
+  function renderStats(){
+    const s = getStats();
+    els.statsView.innerHTML = `
+      <div class="stats-grid">
+        ${statCard("總送出", s.sent, "發")}
+        ${statCard("總回收彈殼", s.recv, "發")}
+        ${statCard("未擊發", s.unfired, "發")}
+        ${statCard("不發彈", s.misfires, "發")}
+        ${statCard("變形彈", s.deformed, "發")}
+        ${statCard("待核對靶位", s.mismatchTargets, "靶")}
+
+        <div class="card stat-card wide">
+          <div class="summary-row"><div class="k">實際消耗</div><div class="v mono">${s.consumed}</div></div>
+          <div class="summary-row"><div class="k">剩餘彈藥</div><div class="v mono">${s.remaining}</div></div>
+          <div class="summary-row"><div class="k">剩餘完整波次</div><div class="v mono">${s.fullWaves}${s.waveRemainder ? ` + ${s.waveRemainder} 發` : ""}</div></div>
+          <div class="summary-row"><div class="k">目前波次總數</div><div class="v mono">${state.waves.length}</div></div>
         </div>
+      </div>
 
-        <!-- 3. 表格區 -->
-        <div class="table-scroll-area" id="tableWrapper">
-            <table>
-                <thead id="table-head">
-                    <!-- JS 生成 -->
-                </thead>
-                <tbody id="table-body">
-                    <!-- JS 生成 -->
-                </tbody>
-            </table>
-        </div>
+      <div class="stats-actions">
+        <button class="secondary-btn" data-export-json>匯出 JSON</button>
+        <button class="secondary-btn" data-export-csv>匯出 CSV</button>
+      </div>`;
 
-        <!-- 4. 底部按鈕 -->
-        <footer class="footer-bar">
-            <!-- 簡易統計 -->
-            <div class="flex gap-4 mr-auto">
-                <div class="flex flex-col items-center">
-                    <span id="totalConsumed" class="text-xl font-bold text-gray-800 font-mono">0</span>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase">已消耗</span>
-                </div>
-                <div class="w-px h-8 bg-gray-200"></div>
-                <div class="flex flex-col items-center">
-                    <span id="totalUnfired" class="text-xl font-bold text-red-500 font-mono">0</span>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase">未擊發</span>
-                </div>
-            </div>
+    $("[data-export-json]", els.statsView)?.addEventListener("click", exportJSON);
+    $("[data-export-csv]", els.statsView)?.addEventListener("click", exportCSV);
+  }
 
-            <!-- 主按鈕 -->
-            <button onclick="app.addWave()" class="btn-ios flex-1 max-w-[220px]">
-                <i class="fas fa-plus-circle"></i> 新增波次
-            </button>
-        </footer>
+  function statCard(label, value, unit){
+    return `<div class="card stat-card"><div class="k">${label}</div><div class="v mono">${value}</div><div class="sub">${unit}</div></div>`;
+  }
 
-    </div>
+  function renderBottomAction(){
+    const show = state.view === "operate";
+    els.bottomAction.style.display = show ? "block" : "none";
+    if(!show) return;
 
-    <!-- 說明書 Modal -->
-    <div id="helpModal" class="fixed inset-0 z-[100] pointer-events-none">
-        <div class="modal-backdrop" onclick="app.toggleHelp()"></div>
-        <div class="modal-card">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b">
-                <h3 class="text-xl font-bold text-gray-900 flex items-center">
-                    <i class="fas fa-book-open text-blue-500 mr-2"></i> 使用說明書
-                </h3>
-                <button onclick="app.toggleHelp()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-500"><i class="fas fa-times"></i></button>
-            </div>
+    const hasWave = state.waves.length > 0;
+    els.prevTargetBtn.disabled = !hasWave || (state.activeWaveIndex===0 && state.activeTargetIndex===0);
+    els.nextTargetBtn.disabled = !hasWave || (state.activeWaveIndex===state.waves.length-1 && state.activeTargetIndex===state.targetCount-1);
 
-            <div class="manual-item">
-                <div class="manual-num">1</div>
-                <div class="manual-content">
-                    <h4>初始設定</h4>
-                    <p>請先點擊頂部齒輪 <i class="fas fa-cog text-gray-400"></i> 設定「總領取發數」。若有固定裝填數（如每彈匣5發），請設定「預設發數」，新增波次時會自動填入。</p>
-                </div>
-            </div>
+    if(!hasWave){
+      els.mainActionBtn.className = "action-main";
+      els.mainActionBtn.textContent = "＋ 新增第一波";
+      return;
+    }
 
-            <div class="manual-item">
-                <div class="manual-num">2</div>
-                <div class="manual-content">
-                    <h4>輸入數據</h4>
-                    <p>點擊表格中的 <span class="inline-block border-2 border-dashed border-gray-400 w-5 h-5 align-middle rounded mx-1 bg-gray-50"></span> 虛線框即可輸入。介面已針對 iPhone Pro Max 優化，框體較大易於點擊。</p>
-                </div>
-            </div>
+    const t = currentTarget();
+    const diff = getTargetDiff(t);
 
-            <div class="manual-item">
-                <div class="manual-num">3</div>
-                <div class="manual-content">
-                    <h4>欄位定義</h4>
-                    <ul class="text-sm text-gray-600 space-y-1 mt-1 ml-1">
-                        <li><b class="text-blue-600">送</b>：發給射手的實彈數。</li>
-                        <li><b class="text-green-600">收</b>：回收的彈殼數。</li>
-                        <li><b>未 (未擊發)</b>：槍枝故障或停射繳回的實彈。</li>
-                        <li><b class="text-red-500">壞 (不發彈)</b>：擊針撞擊底火但未擊發。</li>
-                        <li><b class="text-orange-500">變 (變形彈)</b>：彈體損壞無法使用。</li>
-                    </ul>
-                </div>
-            </div>
+    if(diff === 0){
+      els.mainActionBtn.className = "action-main good";
+      const isLastTarget = state.activeTargetIndex === state.targetCount - 1;
+      els.mainActionBtn.textContent = isLastTarget ? "✓ 完成本波・新增下一波" : "✓ 完成本靶・下一靶";
+    }else{
+      els.mainActionBtn.className = "action-main warn";
+      els.mainActionBtn.textContent = diff > 0 ? `⚠ 還差 ${diff} 發` : `⚠ 多 ${Math.abs(diff)} 發`;
+    }
+  }
 
-            <div class="manual-item">
-                <div class="manual-num">4</div>
-                <div class="manual-content">
-                    <h4>防呆判讀 (系統自動計算)</h4>
-                    <p class="mb-2">每格右上角若出現標籤，代表數據有誤：</p>
-                    <div class="flex gap-3">
-                        <div class="bg-red-50 p-2 rounded border border-red-100 text-center flex-1">
-                            <span class="text-white bg-red-500 text-xs px-2 py-0.5 rounded font-bold">缺 -2</span>
-                            <div class="text-xs text-gray-500 mt-1">短少 2 顆</div>
-                        </div>
-                        <div class="bg-blue-50 p-2 rounded border border-blue-100 text-center flex-1">
-                            <span class="text-white bg-blue-500 text-xs px-2 py-0.5 rounded font-bold">多 +1</span>
-                            <div class="text-xs text-gray-500 mt-1">多出 1 顆</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  function renderViews(){
+    els.operateView.hidden = state.view !== "operate";
+    els.recordsView.hidden = state.view !== "records";
+    els.statsView.hidden = state.view !== "stats";
 
-            <button onclick="app.toggleHelp()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-lg mt-2">瞭解</button>
-        </div>
-    </div>
+    $$(".seg-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.view === state.view));
 
-    <!-- 統計詳細 Modal -->
-    <div id="statsModal" class="fixed inset-0 z-[100] pointer-events-none">
-        <div class="modal-backdrop" onclick="app.toggleStats()"></div>
-        <div class="modal-card">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-gray-900">詳細統計</h3>
-                <button onclick="app.toggleStats()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-500"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-3 text-center mb-6">
-                <div class="bg-red-50 p-3 rounded-2xl">
-                    <div id="modalUnfired" class="text-2xl font-bold text-red-600 font-mono">0</div>
-                    <div class="text-xs text-red-400 mt-1">未擊發</div>
-                </div>
-                <div class="bg-orange-50 p-3 rounded-2xl">
-                    <div id="modalMisfires" class="text-2xl font-bold text-orange-600 font-mono">0</div>
-                    <div class="text-xs text-orange-400 mt-1">不發彈</div>
-                </div>
-                <div class="bg-yellow-50 p-3 rounded-2xl">
-                    <div id="modalDeformed" class="text-2xl font-bold text-yellow-600 font-mono">0</div>
-                    <div class="text-xs text-yellow-500 mt-1">變形彈</div>
-                </div>
-            </div>
+    if(state.view === "operate") renderOperate();
+    if(state.view === "records") renderRecords();
+    if(state.view === "stats") renderStats();
+  }
 
-            <div class="bg-gray-50 rounded-xl p-4 space-y-3 mb-6">
-                <div class="flex justify-between">
-                    <span class="text-gray-500">總送出</span>
-                    <span id="modalTotalSent" class="font-bold font-mono text-gray-800">0</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">總回收 (彈殼)</span>
-                    <span id="modalTotalRecv" class="font-bold font-mono text-green-600">0</span>
-                </div>
-                <div class="border-t border-gray-200 my-2"></div>
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-800 font-bold">實際消耗</span>
-                    <span id="modalConsumed" class="font-bold font-mono text-2xl text-blue-600">0</span>
-                </div>
-            </div>
+  function renderAll(){
+    normalizeState();
+    renderHero();
+    renderViews();
+    renderBottomAction();
+    renderSettingsFields();
+  }
 
-            <button onclick="app.exportData()" class="w-full py-3 bg-gray-800 text-white rounded-xl font-bold">
-                <i class="fas fa-file-export mr-2"></i> 匯出 JSON
-            </button>
-        </div>
-    </div>
+  function setView(view){
+    state.view = view;
+    scheduleSave();
+    renderAll();
+    $("#content").scrollTo({top:0,behavior:"smooth"});
+  }
 
-    <!-- 確認視窗 (Alert) -->
-    <div id="alertModal" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200">
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-        <div class="bg-white rounded-2xl p-6 w-[80%] max-w-[320px] shadow-2xl transform scale-95 transition-transform duration-200 z-10">
-            <h3 id="alertTitle" class="text-lg font-bold text-gray-900 mb-2">確認</h3>
-            <p id="alertMsg" class="text-gray-600 mb-6 text-sm">...</p>
-            <div class="flex gap-3">
-                <button onclick="app.closeAlert()" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-bold">取消</button>
-                <button id="alertConfirm" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-bold">確定</button>
-            </div>
-        </div>
-    </div>
+  function addWave(){
+    if(state.globalReceived <= 0){
+      openSettings();
+      showToast("請先設定總領取發數");
+      return;
+    }
 
-    <script>
-        const app = (() => {
-            let state = {
-                globalReceived: 0,
-                targetCount: 2,
-                expectedShots: [0, 0],
-                waves: []
-            };
+    const stats = getStats();
+    const needed = state.expectedShots.reduce((a,b)=>a+num(b),0);
+    if(stats.remaining < needed && stats.remaining > 0){
+      openAlert("彈藥不足完整波次", `目前剩餘 ${stats.remaining} 發，預設下一波需要 ${needed} 發。仍要新增下一波嗎？`, () => createWave());
+      return;
+    }
+    if(stats.remaining <= 0 && state.waves.length > 0){
+      openAlert("目前沒有可用彈藥", `剩餘彈藥為 ${stats.remaining} 發。仍要新增波次嗎？`, () => createWave());
+      return;
+    }
+    createWave();
+  }
 
-            const CONSTANTS = {
-                MAX_TARGETS: 50,
-                STORAGE_KEY: 'shooting_tracker_promax_v1'
-            };
+  function createWave(){
+    const id = state.waves.length ? Math.max(...state.waves.map(w=>num(w.id))) + 1 : 1;
+    state.waves.push({
+      id,
+      createdAt:Date.now(),
+      targets:Array.from({length:state.targetCount}, (_,i)=>makeTarget(i))
+    });
+    state.activeWaveIndex = state.waves.length - 1;
+    state.activeTargetIndex = 0;
+    state.view = "operate";
+    saveNow();
+    renderAll();
+    requestAnimationFrame(() => $("#recvInput", els.operateView)?.focus());
+    showToast(`已新增第 ${id} 波`);
+  }
 
-            // DOM Elements Cache
-            const els = {
-                globalInput: document.getElementById('globalReceivedShots'),
-                targetInput: document.getElementById('numberOfTargets'),
-                remainingDiv: document.getElementById('remainingShots'),
-                remainingWavesDiv: document.getElementById('remainingWaves'),
-                partialWaveSpan: document.getElementById('partialWave'),
-                settingsPanel: document.getElementById('settingsPanel'),
-                settingsDot: document.getElementById('settingsDot'),
-                tableHead: document.getElementById('table-head'),
-                tableBody: document.getElementById('table-body'),
-                expectedContainer: document.getElementById('expected-shots-container'),
-                totalConsumed: document.getElementById('totalConsumed'),
-                totalUnfired: document.getElementById('totalUnfired'),
-                // Modals
-                helpModal: document.getElementById('helpModal'),
-                statsModal: document.getElementById('statsModal'),
-                alertModal: document.getElementById('alertModal'),
-                // Modal Values
-                modalUnfired: document.getElementById('modalUnfired'),
-                modalMisfires: document.getElementById('modalMisfires'),
-                modalDeformed: document.getElementById('modalDeformed'),
-                modalTotalSent: document.getElementById('modalTotalSent'),
-                modalTotalRecv: document.getElementById('modalTotalRecv'),
-                modalConsumed: document.getElementById('modalConsumed'),
-                // Alert
-                alertTitle: document.getElementById('alertTitle'),
-                alertMsg: document.getElementById('alertMsg'),
-                alertConfirm: document.getElementById('alertConfirm')
-            };
+  function moveTarget(dir){
+    if(!state.waves.length) return;
+    let wi = state.activeWaveIndex;
+    let ti = state.activeTargetIndex + dir;
 
-            // --- Init ---
-            const init = () => {
-                loadState();
-                if (state.globalReceived === 0) {
-                    toggleSettings(true);
-                    els.settingsDot.classList.remove('hidden');
-                }
-                renderUI();
-            };
+    if(ti >= state.targetCount){
+      if(wi < state.waves.length - 1){ wi++; ti = 0; }
+      else ti = state.targetCount - 1;
+    }else if(ti < 0){
+      if(wi > 0){ wi--; ti = state.targetCount - 1; }
+      else ti = 0;
+    }
 
-            const loadState = () => {
-                const saved = localStorage.getItem(CONSTANTS.STORAGE_KEY);
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        state = { ...state, ...parsed };
-                        if (state.expectedShots.length < state.targetCount) {
-                            state.expectedShots = Array.from({length: state.targetCount}, (_, i) => state.expectedShots[i] || 5);
-                        }
-                    } catch (e) { console.error(e); }
-                } else {
-                    state.expectedShots = Array(state.targetCount).fill(5);
-                }
-            };
+    state.activeWaveIndex = wi;
+    state.activeTargetIndex = ti;
+    scheduleSave();
+    renderAll();
+  }
 
-            const saveState = () => {
-                localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(state));
-                calculateStats();
-                if (state.globalReceived > 0) els.settingsDot.classList.add('hidden');
-            };
+  function mainAction(){
+    if(!state.waves.length){
+      addWave();
+      return;
+    }
 
-            // --- Logic ---
-            const calculateStats = () => {
-                let totalSent = 0, totalReceived = 0, totalUnfired = 0, totalMisfires = 0, totalDeformed = 0;
+    const t = currentTarget();
+    const diff = getTargetDiff(t);
 
-                state.waves.forEach(wave => {
-                    wave.targets.forEach(t => {
-                        totalSent += (parseInt(t.sent) || 0);
-                        totalReceived += (parseInt(t.recv) || 0);
-                        totalUnfired += (parseInt(t.unfired) || 0);
-                        totalMisfires += (parseInt(t.misfires) || 0);
-                        totalDeformed += (parseInt(t.deformed) || 0);
-                    });
-                });
+    if(diff !== 0){
+      if(diff > 0) showToast(`還有 ${diff} 發尚未核對`);
+      else showToast(`目前多登記 ${Math.abs(diff)} 發`);
+      return;
+    }
 
-                const actualConsumed = totalSent - totalUnfired;
-                const remaining = state.globalReceived - actualConsumed;
+    if(state.activeTargetIndex < state.targetCount - 1){
+      state.activeTargetIndex += 1;
+      scheduleSave();
+      renderAll();
+      requestAnimationFrame(() => $("#recvInput", els.operateView)?.focus());
+      return;
+    }
 
-                // Update HUD
-                els.remainingDiv.textContent = remaining;
-                els.remainingDiv.className = `text-3xl font-bold tabular-nums font-mono ${remaining < 0 ? 'text-red-500' : 'text-emerald-600'}`;
+    addWave();
+  }
 
-                const shotsPerWave = state.expectedShots.reduce((a, b) => a + (parseInt(b)||0), 0);
-                if (shotsPerWave > 0 && remaining > 0) {
-                    const fullWaves = Math.floor(remaining / shotsPerWave);
-                    const remainder = remaining % shotsPerWave;
-                    els.remainingWavesDiv.textContent = fullWaves;
-                    if (remainder > 0) {
-                        els.partialWaveSpan.textContent = `+${remainder}`;
-                        els.partialWaveSpan.classList.remove('hidden');
-                    } else {
-                        els.partialWaveSpan.classList.add('hidden');
-                    }
-                } else {
-                    els.remainingWavesDiv.textContent = remaining > 0 ? "∞" : "0";
-                    els.partialWaveSpan.classList.add('hidden');
-                }
+  function deleteWave(index){
+    const w = state.waves[index];
+    if(!w) return;
 
-                // Update Footer & Modal
-                els.totalConsumed.textContent = actualConsumed;
-                els.totalUnfired.textContent = totalUnfired;
-                
-                els.modalUnfired.textContent = totalUnfired;
-                els.modalMisfires.textContent = totalMisfires;
-                els.modalDeformed.textContent = totalDeformed;
-                els.modalTotalSent.textContent = totalSent;
-                els.modalTotalRecv.textContent = totalReceived;
-                els.modalConsumed.textContent = actualConsumed;
+    openAlert("刪除波次", `確定刪除第 ${w.id} 波？刪除後可立即復原一次。`, () => {
+      lastDeleted = {wave:structuredCloneSafe(w), index};
+      state.waves.splice(index,1);
+      state.activeWaveIndex = clamp(state.activeWaveIndex,0,Math.max(0,state.waves.length-1));
+      state.activeTargetIndex = 0;
+      saveNow();
+      renderAll();
+      showToast("已刪除波次", "復原", undoDelete, 5000);
+    });
+  }
 
-                updateRowCalculations();
-            };
+  function undoDelete(){
+    if(!lastDeleted) return;
+    state.waves.splice(lastDeleted.index,0,lastDeleted.wave);
+    lastDeleted = null;
+    saveNow();
+    renderAll();
+    showToast("已復原");
+  }
 
-            // --- Render ---
-            const renderUI = () => {
-                els.globalInput.value = state.globalReceived || '';
-                els.targetInput.value = state.targetCount;
-                renderExpectedInputs();
-                renderTable();
-                calculateStats();
-            };
+  function renderSettingsFields(){
+    els.globalReceivedInput.value = state.globalReceived || "";
+    els.targetCountInput.value = state.targetCount;
+    els.expectedGrid.innerHTML = state.expectedShots.map((v,i) => `
+      <div class="expected-item">
+        <label>靶 ${i+1}</label>
+        <input class="setting-input mono" data-expected="${i}" type="number" inputmode="numeric" min="0" value="${num(v)}">
+      </div>`).join("");
 
-            const renderExpectedInputs = () => {
-                els.expectedContainer.innerHTML = state.expectedShots.map((val, i) => `
-                    <div class="flex-shrink-0 w-14 text-center">
-                        <label class="text-[10px] text-gray-400 block mb-1">靶${i+1}</label>
-                        <input type="number" value="${val}" 
-                            onchange="app.updateExpected(${i}, this.value)"
-                            class="settings-input rounded-lg h-10 w-full" placeholder="-">
-                    </div>
-                `).join('');
-            };
+    $$("[data-expected]", els.expectedGrid).forEach(inp => inp.addEventListener("input", () => {
+      const i = parseInt(inp.dataset.expected);
+      state.expectedShots[i] = num(inp.value);
+      scheduleSave();
+      renderHero();
+    }));
+  }
 
-            const renderTable = () => {
-                // Header (Sticky)
-                let headerRow = `<th class="sticky-col-head w-12 text-center shadow-sm">#</th>`;
-                for (let i = 0; i < state.targetCount; i++) {
-                    headerRow += `
-                        <th class="min-w-[60px] border-l border-gray-100"><div class="text-blue-600">送</div></th>
-                        <th class="min-w-[60px]"><div class="text-green-600">收</div></th>
-                        <th class="min-w-[50px] bg-gray-50 text-gray-400">未</th>
-                        <th class="min-w-[50px] bg-gray-50 text-red-400">壞</th>
-                        <th class="min-w-[50px] bg-gray-50 border-r border-gray-200 text-orange-400">變</th>
-                    `;
-                }
-                els.tableHead.innerHTML = `<tr>${headerRow}</tr>`;
+  function openSettings(){
+    renderSettingsFields();
+    els.sheetBackdrop.classList.add("open");
+    els.settingsSheet.classList.add("open");
+  }
 
-                // Body
-                if (state.waves.length === 0) {
-                    els.tableBody.innerHTML = `<tr><td colspan="${1 + state.targetCount * 5}" class="py-16 text-center text-gray-400">
-                        <i class="fas fa-clipboard-list text-4xl mb-2 opacity-20"></i><br>尚無數據
-                    </td></tr>`;
-                    return;
-                }
+  function closeSettings(){
+    els.sheetBackdrop.classList.remove("open");
+    els.settingsSheet.classList.remove("open");
+    renderAll();
+  }
 
-                els.tableBody.innerHTML = state.waves.map((wave, wIdx) => {
-                    let rowHtml = `
-                        <th class="sticky-col-body text-gray-500 font-medium">
-                            <div class="flex flex-col items-center justify-center gap-1">
-                                <span class="text-lg text-gray-800">${wave.id}</span>
-                                <button onclick="app.deleteWave(${wIdx})" class="text-gray-300 hover:text-red-500 p-2"><i class="fas fa-trash-alt text-xs"></i></button>
-                            </div>
-                        </th>
-                    `;
+  function changeTargetCount(delta){
+    const next = clamp(state.targetCount + delta, 1, MAX_TARGETS);
+    if(next === state.targetCount) return;
 
-                    wave.targets.forEach((t, tIdx) => {
-                        rowHtml += `
-                            <td class="border-l border-gray-100 relative">
-                                <input type="number" value="${t.sent}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'sent', this.value)" placeholder="-">
-                            </td>
-                            <td class="relative">
-                                <input type="number" value="${t.recv}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'recv', this.value)" placeholder="-" style="color:#059669; font-weight:600;">
-                                <div id="diff-tag-${wIdx}-${tIdx}" class="absolute -top-1 right-0 pointer-events-none z-10"></div>
-                            </td>
-                            <td class="bg-gray-50"><input type="number" value="${t.unfired}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'unfired', this.value)" placeholder="" tabindex="-1" class="text-gray-400 text-sm"></td>
-                            <td class="bg-gray-50"><input type="number" value="${t.misfires}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'misfires', this.value)" placeholder="" tabindex="-1" class="text-red-400 text-sm"></td>
-                            <td class="bg-gray-50 border-r border-gray-200"><input type="number" value="${t.deformed}" oninput="app.updateCell(${wIdx}, ${tIdx}, 'deformed', this.value)" placeholder="" tabindex="-1" class="text-orange-400 text-sm"></td>
-                        `;
-                    });
+    if(next < state.targetCount){
+      const removedIndexes = Array.from({length:state.targetCount-next}, (_,k)=>next+k);
+      const hasData = state.waves.some(w => removedIndexes.some(i => {
+        const t = w.targets[i];
+        if(!t) return false;
+        return [t.sent,t.recv,t.unfired,t.misfires,t.deformed].some(v=>num(v)>0);
+      }));
 
-                    return `<tr>${rowHtml}</tr>`;
-                }).join('');
-            };
+      if(hasData){
+        openAlert("縮減靶位會刪除資料", `從 ${state.targetCount} 個靶位改成 ${next} 個，後面的靶位紀錄會被刪除。確定繼續嗎？`, () => applyTargetCount(next));
+        return;
+      }
+    }
 
-            const updateRowCalculations = () => {
-                state.waves.forEach((wave, wIdx) => {
-                    wave.targets.forEach((t, tIdx) => {
-                        const tag = document.getElementById(`diff-tag-${wIdx}-${tIdx}`);
-                        if (tag) {
-                            const sent = parseInt(t.sent) || 0;
-                            const recv = parseInt(t.recv) || 0;
-                            const unfired = parseInt(t.unfired) || 0;
-                            const diff = sent - recv - unfired;
-                            
-                            if (diff === 0) {
-                                tag.innerHTML = '';
-                            } else {
-                                const isLack = diff > 0;
-                                tag.innerHTML = `<span class="tag-diff ${isLack ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}">${isLack ? '-'+diff : '+'+Math.abs(diff)}</span>`;
-                            }
-                        }
-                    });
-                });
-            };
+    applyTargetCount(next);
+  }
 
-            // --- Interaction ---
-            const toggleSettings = (force) => {
-                const p = els.settingsPanel;
-                const open = p.classList.contains('open');
-                if (force || !open) {
-                    p.classList.add('open');
-                    document.getElementById('settingsBtn').classList.add('text-blue-600', 'bg-blue-50');
-                } else {
-                    p.classList.remove('open');
-                    document.getElementById('settingsBtn').classList.remove('text-blue-600', 'bg-blue-50');
-                }
-            };
+  function applyTargetCount(next){
+    const old = state.targetCount;
+    state.targetCount = next;
 
-            const toggleModal = (modalEl) => {
-                const isOpen = modalEl.classList.contains('modal-open');
-                if (isOpen) {
-                    modalEl.classList.remove('modal-open');
-                    modalEl.classList.add('pointer-events-none');
-                } else {
-                    modalEl.classList.remove('pointer-events-none');
-                    modalEl.classList.add('modal-open');
-                }
-            };
+    if(next > old){
+      for(let i=old;i<next;i++) state.expectedShots[i] = 5;
+      state.waves.forEach(w => {
+        for(let i=old;i<next;i++) w.targets.push(makeTarget(i));
+      });
+    }else{
+      state.expectedShots.length = next;
+      state.waves.forEach(w => w.targets.length = next);
+      state.activeTargetIndex = clamp(state.activeTargetIndex,0,next-1);
+    }
 
-            const toggleHelp = () => toggleModal(els.helpModal);
-            const toggleStats = () => toggleModal(els.statsModal);
+    saveNow();
+    renderAll();
+  }
 
-            const updateGlobal = (v) => { state.globalReceived = parseInt(v)||0; saveState(); };
-            
-            const adjustTargets = (d) => {
-                let n = Math.min(Math.max(1, state.targetCount + d), CONSTANTS.MAX_TARGETS);
-                state.targetCount = n;
-                if (state.expectedShots.length < n) {
-                    for(let i=state.expectedShots.length; i<n; i++) state.expectedShots.push(5);
-                }
-                state.waves.forEach(w => {
-                    if (w.targets.length < n) {
-                        for(let i=w.targets.length; i<n; i++) w.targets.push({sent:state.expectedShots[i],recv:'',unfired:'',misfires:'',deformed:''});
-                    } else w.targets.length = n;
-                });
-                els.targetInput.value = n;
-                saveState();
-                renderUI();
-            };
+  function resetAll(){
+    openAlert("重置所有紀錄", "這會清空全部波次，但會保留總領取發數、靶位數與預設發數。", () => {
+      state.waves = [];
+      state.activeWaveIndex = 0;
+      state.activeTargetIndex = 0;
+      saveNow();
+      renderAll();
+      closeSettings();
+      showToast("全部波次已清空");
+    });
+  }
 
-            const updateExpected = (i, v) => { state.expectedShots[i] = parseInt(v)||0; saveState(); };
+  function downloadBlob(filename, content, type){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
 
-            const addWave = () => {
-                const id = state.waves.length > 0 ? state.waves[state.waves.length-1].id + 1 : 1;
-                const t = Array.from({length:state.targetCount}, (_,i)=>({
-                    sent:state.expectedShots[i]||0, recv:'', unfired:'', misfires:'', deformed:''
-                }));
-                state.waves.push({id, targets:t});
-                saveState();
-                renderTable();
-                setTimeout(() => {
-                    const wrap = document.getElementById('tableWrapper');
-                    wrap.scrollTo({top: wrap.scrollHeight, behavior:'smooth'});
-                }, 100);
-            };
+  function dateStamp(){
+    const d = new Date();
+    const p = n => String(n).padStart(2,"0");
+    return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+  }
 
-            const updateCell = (w, t, f, v) => {
-                state.waves[w].targets[t][f] = v;
-                calculateStats();
-                if(app.timer) clearTimeout(app.timer);
-                app.timer = setTimeout(()=>localStorage.setItem(CONSTANTS.STORAGE_KEY, JSON.stringify(state)), 500);
-            };
+  function exportJSON(){
+    saveNow();
+    downloadBlob(`shooting_tracker_${dateStamp()}.json`, JSON.stringify(state,null,2), "application/json;charset=utf-8");
+    showToast("JSON 已匯出");
+  }
 
-            // Alert System
-            let confirmCb = null;
-            const openAlert = (title, msg, cb) => {
-                els.alertTitle.textContent = title;
-                els.alertMsg.textContent = msg;
-                confirmCb = cb;
-                els.alertModal.classList.remove('pointer-events-none', 'opacity-0');
-                els.alertModal.querySelector('div.transform').classList.remove('scale-95');
-            };
-            const closeAlert = () => {
-                els.alertModal.classList.add('opacity-0');
-                els.alertModal.querySelector('div.transform').classList.add('scale-95');
-                setTimeout(()=>els.alertModal.classList.add('pointer-events-none'), 200);
-                confirmCb = null;
-            };
-            els.alertConfirm.onclick = () => { if(confirmCb) confirmCb(); closeAlert(); };
+  function exportCSV(){
+    const rows = [["波次","靶位","送出","回收彈殼","未擊發","不發彈","變形彈","差異"]];
+    state.waves.forEach(w => w.targets.forEach((t,ti) => {
+      rows.push([w.id,ti+1,num(t.sent),num(t.recv),num(t.unfired),num(t.misfires),num(t.deformed),getTargetDiff(t)]);
+    }));
+    const csv = "\ufeff" + rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+    downloadBlob(`shooting_tracker_${dateStamp()}.csv`, csv, "text/csv;charset=utf-8");
+    showToast("CSV 已匯出");
+  }
 
-            const deleteWave = (idx) => openAlert('刪除波次', `確定刪除第 ${state.waves[idx].id} 波次？`, () => {
-                state.waves.splice(idx, 1);
-                saveState();
-                renderTable();
-            });
+  async function importJSON(file){
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const incoming = parsed.version === 2 ? parsed : migrateOld(parsed);
+      openAlert("匯入備份", "匯入會覆蓋目前資料。確定要繼續嗎？", () => {
+        state = {...structuredCloneSafe(defaultState), ...incoming};
+        normalizeState();
+        saveNow();
+        renderAll();
+        closeSettings();
+        showToast("備份已匯入");
+      });
+    }catch(err){
+      console.error(err);
+      showToast("匯入失敗：檔案格式不正確");
+    }finally{
+      els.importFile.value = "";
+    }
+  }
 
-            const resetData = () => openAlert('重置', '確定清空所有資料？', () => {
-                state.waves = [];
-                saveState();
-                renderTable();
-            });
+  function openAlert(title, msg, onConfirm){
+    els.alertTitle.textContent = title;
+    els.alertMsg.textContent = msg;
+    alertConfirm = onConfirm;
+    els.alertWrap.classList.add("open");
+  }
 
-            const exportData = () => {
-                const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-                const a = document.createElement('a');
-                a.href = str; a.download = `shooting_log_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-            };
+  function closeAlert(){
+    els.alertWrap.classList.remove("open");
+    alertConfirm = null;
+  }
 
-            return {
-                init, toggleSettings, toggleHelp, toggleStats,
-                updateGlobal, adjustTargets, updateExpected,
-                addWave, deleteWave, updateCell,
-                resetData, closeAlert, exportData
-            };
-        })();
+  let toastTimer = null;
+  function showToast(message, actionText="", actionFn=null, duration=2200){
+    clearTimeout(toastTimer);
+    els.toast.innerHTML = "";
+    const span = document.createElement("span");
+    span.textContent = message;
+    els.toast.appendChild(span);
 
-        window.onload = app.init;
-    </script>
+    if(actionText && actionFn){
+      const btn = document.createElement("button");
+      btn.textContent = actionText;
+      btn.addEventListener("click", () => {
+        actionFn();
+        els.toast.classList.remove("show");
+      });
+      els.toast.appendChild(btn);
+    }
+
+    els.toast.classList.add("show");
+    toastTimer = setTimeout(()=>els.toast.classList.remove("show"), duration);
+  }
+
+  function bindGlobalEvents(){
+    $$(".seg-btn").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+
+    els.settingsBtn.addEventListener("click", openSettings);
+    els.closeSettings.addEventListener("click", closeSettings);
+    els.doneSettings.addEventListener("click", closeSettings);
+    els.sheetBackdrop.addEventListener("click", closeSettings);
+
+    els.globalReceivedInput.addEventListener("input", () => {
+      state.globalReceived = num(els.globalReceivedInput.value);
+      scheduleSave();
+      renderHero();
+    });
+
+    els.targetMinus.addEventListener("click", () => changeTargetCount(-1));
+    els.targetPlus.addEventListener("click", () => changeTargetCount(1));
+
+    els.exportJsonBtn.addEventListener("click", exportJSON);
+    els.exportCsvBtn.addEventListener("click", exportCSV);
+    els.importBtn.addEventListener("click", () => els.importFile.click());
+    els.importFile.addEventListener("change", () => {
+      const file = els.importFile.files?.[0];
+      if(file) importJSON(file);
+    });
+    els.resetBtn.addEventListener("click", resetAll);
+
+    els.prevTargetBtn.addEventListener("click", () => moveTarget(-1));
+    els.nextTargetBtn.addEventListener("click", () => moveTarget(1));
+    els.mainActionBtn.addEventListener("click", mainAction);
+
+    els.alertCancel.addEventListener("click", closeAlert);
+    els.alertWrap.querySelector(".alert-bg").addEventListener("click", closeAlert);
+    els.alertOk.addEventListener("click", () => {
+      const cb = alertConfirm;
+      closeAlert();
+      if(cb) cb();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if(document.visibilityState === "hidden") saveNow();
+    });
+    window.addEventListener("pagehide", saveNow);
+  }
+
+  function init(){
+    loadState();
+    bindGlobalEvents();
+    renderAll();
+
+    if(state.globalReceived <= 0){
+      setTimeout(openSettings, 250);
+    }
+  }
+
+  init();
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js", { scope: "./" })
+        .then(reg => {
+          // 進入頁面時主動檢查新版 Service Worker
+          reg.update().catch(() => {});
+        })
+        .catch(err => console.error("Service Worker 註冊失敗:", err));
+    });
+  }
+</script>
+
 </body>
 </html>
-

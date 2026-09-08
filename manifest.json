@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "靶場數據追蹤 V2 Pro Max",
+  "short_name": "靶場追蹤",
+  "description": "iPhone Pro Max 靶場數據追蹤與彈藥核對工具",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F5F8",
+  "theme_color": "#0B1220",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
